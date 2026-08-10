@@ -29,8 +29,8 @@ body {
 }
 
 body {
-  min-height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
+  overflow: auto;
 }
 
 button,
@@ -56,14 +56,15 @@ button:hover {
 .app-shell {
   display: grid;
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .side-panel {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   background: #171914;
   padding: 20px;
-  overflow: auto;
+  min-width: 0;
+  overflow: visible;
 }
 
 .brand {
@@ -205,7 +206,7 @@ select {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .topbar {
@@ -228,6 +229,7 @@ h1 {
   margin: 0;
   font-size: clamp(1.35rem, 2.4vw, 2.25rem);
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .toolbar {
@@ -238,7 +240,8 @@ h1 {
 }
 
 .timeline-wrap {
-  overflow: auto;
+  min-width: 0;
+  overflow: visible;
   padding: 26px 24px 34px;
 }
 
@@ -308,7 +311,8 @@ h1 {
 }
 
 .node-image {
-  min-height: 190px;
+  min-height: 160px;
+  aspect-ratio: 16 / 5;
   border-radius: 7px;
   margin-bottom: 14px;
   background:
@@ -331,12 +335,14 @@ h1 {
   background: rgba(0, 0, 0, 0.45);
   color: #f6f1df;
   font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .node-text {
   margin: 0;
   color: #efeade;
   line-height: 1.58;
+  overflow-wrap: anywhere;
 }
 
 .consequences {
@@ -363,6 +369,9 @@ h1 {
   padding: 16px 24px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(20, 22, 17, 0.96);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
 }
 
 .composer button {
@@ -381,11 +390,23 @@ h1 {
   opacity: 0.55;
 }
 
-@media (max-width: 860px) {
+@media (min-width: 861px) {
   body {
-    overflow: auto;
+    overflow: hidden;
   }
 
+  .app-shell,
+  .game-area {
+    height: 100dvh;
+  }
+
+  .side-panel,
+  .timeline-wrap {
+    overflow: auto;
+  }
+}
+
+@media (max-width: 860px) {
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -397,7 +418,7 @@ h1 {
 
   .game-area {
     order: -1;
-    min-height: 72vh;
+    min-height: 100dvh;
   }
 
   .topbar {
@@ -407,6 +428,10 @@ h1 {
 
   .toolbar {
     justify-content: flex-start;
+  }
+
+  .timeline-wrap {
+    padding-bottom: 128px;
   }
 }
 
@@ -424,17 +449,68 @@ h1 {
     padding-right: 14px;
   }
 
+  .topbar {
+    gap: 14px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    width: 100%;
+  }
+
+  .toolbar button {
+    min-width: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
   .story-node {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 10px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
   }
 
   .timeline::before {
-    left: 14px;
+    left: 10px;
   }
 
   .node-pin {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+
+  .node-card {
+    padding: 12px;
+  }
+
+  .node-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .roll-chip {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .node-image {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+  }
+
+  .node-image::after {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    font-size: 0.72rem;
+  }
+
+  .composer {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
