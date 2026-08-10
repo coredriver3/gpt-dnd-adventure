@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GPT Dice Adventure</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-panel">
+        <div class="brand">
+          <span class="mark">20</span>
+          <div>
+            <p>GPT Dice Adventure</p>
+            <small>High consequence story engine</small>
+          </div>
+        </div>
+
+        <section class="panel-section">
+          <h2>Character</h2>
+          <label>
+            Name
+            <input id="characterName" type="text" value="Mara" maxlength="28" />
+          </label>
+          <label>
+            Concept
+            <input id="characterConcept" type="text" value="runaway cartographer" maxlength="80" />
+          </label>
+          <label>
+            Setting
+            <select id="setting">
+              <option value="dark-fantasy">Dark fantasy borderlands</option>
+              <option value="arcane-city">Arcane city intrigue</option>
+              <option value="post-empire">Post empire ruins</option>
+              <option value="german-folklore">German folklore woods</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="panel-section grid-two">
+          <div>
+            <h2>Status</h2>
+            <div class="meter danger">
+              <span>Health</span>
+              <strong id="healthText">10 / 10</strong>
+              <i id="healthBar"></i>
+            </div>
+            <div class="meter">
+              <span>Resolve</span>
+              <strong id="resolveText">6 / 6</strong>
+              <i id="resolveBar"></i>
+            </div>
+          </div>
+          <div>
+            <h2>Resources</h2>
+            <ul id="resources" class="compact-list"></ul>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Inventory</h2>
+          <ul id="inventory" class="tag-list"></ul>
+        </section>
+
+        <section class="panel-section">
+          <h2>Rules</h2>
+          <div class="rules">
+            <span>Relevant DE/EN inputs only</span>
+            <span>Square brackets are command mode</span>
+            <span>Death is possible</span>
+            <span>Rewards stay contextual</span>
+          </div>
+        </section>
+      </aside>
+
+      <main class="game-area">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Prototype</p>
+            <h1>Play a GPT-narrated dice adventure</h1>
+          </div>
+          <div class="toolbar">
+            <button id="newGameBtn" type="button" title="Start new game">New</button>
+            <button id="imageToggle" type="button" title="Toggle generated scene cards">Images on</button>
+            <button id="languageToggle" type="button" title="Switch language">DE</button>
+          </div>
+        </header>
+
+        <section class="timeline-wrap" aria-label="Story path">
+          <div id="timeline" class="timeline"></div>
+        </section>
+
+        <form id="actionForm" class="composer">
+          <input
+            id="playerInput"
+            type="text"
+            autocomplete="off"
+            placeholder="Was tust du? Oder [inventory], [status], [roll d20+2] ..."
+          />
+          <button type="submit">Act</button>
+        </form>
+      </main>
+    </div>
+
+    <template id="nodeTemplate">
+      <article class="story-node">
+        <div class="node-pin"></div>
+        <div class="node-card">
+          <div class="node-header">
+            <span class="node-type"></span>
+            <span class="roll-chip"></span>
+          </div>
+          <div class="node-image" role="img"></div>
+          <p class="node-text"></p>
+          <div class="consequences"></div>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
