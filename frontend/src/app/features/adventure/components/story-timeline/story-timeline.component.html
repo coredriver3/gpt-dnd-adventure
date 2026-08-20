@@ -1,0 +1,28 @@
+<section class="timeline-wrap" aria-label="Story path">
+  <div class="timeline">
+    @for (node of nodes; track node.id) {
+      <article class="story-node">
+        <div class="node-pin"></div>
+        <div class="node-card">
+          <div class="node-header">
+            <span class="node-type">{{ node.type }}</span>
+            <span class="roll-chip">{{ node.rollText }}</span>
+          </div>
+          @if (images && node.imagePrompt) {
+            <div class="node-image" role="img">
+              <span>{{ node.imagePrompt }}</span>
+            </div>
+          }
+          <p class="node-text">{{ node.text }}</p>
+          <div class="consequences">
+            @for (consequence of node.consequences; track consequence.text) {
+              <span [class.good]="consequence.tone === 'good'" [class.bad]="consequence.tone === 'bad'">
+                {{ consequence.text }}
+              </span>
+            }
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+</section>

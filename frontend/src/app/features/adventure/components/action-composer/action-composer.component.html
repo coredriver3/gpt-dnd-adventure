@@ -1,0 +1,11 @@
+<form class="composer" (ngSubmit)="submit()">
+  <input
+    name="action"
+    type="text"
+    autocomplete="off"
+    [placeholder]="placeholder()"
+    [disabled]="disabled"
+    [(ngModel)]="text"
+  />
+  <button type="submit" [disabled]="disabled">Act</button>
+</form>

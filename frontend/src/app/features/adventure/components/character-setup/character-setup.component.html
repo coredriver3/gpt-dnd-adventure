@@ -1,0 +1,19 @@
+<form class="setup-panel" (ngSubmit)="submit()">
+  <label>
+    Name
+    <input name="name" type="text" maxlength="28" [(ngModel)]="model.name" />
+  </label>
+  <label>
+    Concept
+    <input name="concept" type="text" maxlength="80" [(ngModel)]="model.concept" />
+  </label>
+  <label>
+    Setting
+    <select name="setting" [(ngModel)]="model.setting">
+      @for (setting of settings; track setting.id) {
+        <option [value]="setting.id">{{ setting.label }}</option>
+      }
+    </select>
+  </label>
+  <button type="submit" [disabled]="busy || settings.length === 0">Create</button>
+</form>

@@ -1,13 +1,46 @@
 # GPT Dice Adventure
 
-Reachable static prototype for a dice-based GPT-style adventure game.
+Angular + Spring Boot monorepo for a dice-driven GPT-style adventure prototype.
 
-Features:
+## Structure
 
-- Vertical dashed story path with dice result chips
-- German and English mode
-- Character setup, setting selection, inventory, resources, health, resolve
-- Command mode with `[inventory]`, `[status]`, `[roll d20+2]`, `[image on]`, `[image off]`
-- Local narration prototype with contextual roll outcomes and possible character death
-- Scene image prompt cards for later real image generation integration
+- `frontend/` - Angular app with componentized game UI and API service layer.
+- `backend/` - Spring Boot REST API with in-memory sessions and game rules.
+- `legacy-static/` - original static prototype kept as reference.
 
+## Run locally
+
+Terminal 1:
+
+```bash
+npm run dev:backend
+```
+
+Terminal 2:
+
+```bash
+npm run dev:frontend
+```
+
+Open `http://127.0.0.1:4200/`. Angular proxies `/api` to Spring Boot on port `8080`.
+
+## API
+
+- `GET /api/settings`
+- `POST /api/sessions`
+- `GET /api/sessions/{id}`
+- `POST /api/sessions/{id}/actions`
+- `PATCH /api/sessions/{id}/preferences`
+
+The backend currently uses `LocalStoryProvider` for deterministic local narration. `ExternalStoryProvider` is prepared for a future API integration via:
+
+```bash
+ADVENTURE_AI_ENDPOINT=...
+ADVENTURE_AI_API_KEY=...
+```
+
+## Verify
+
+```bash
+npm run build
+```

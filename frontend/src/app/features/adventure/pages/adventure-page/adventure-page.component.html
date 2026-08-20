@@ -1,0 +1,43 @@
+<div class="app-shell">
+  <main class="game-area">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark">20</span>
+        <div>
+          <p class="eyebrow">Prototype</p>
+          <h1>GPT Dice Adventure</h1>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" title="Start new game" (click)="newGame()">New</button>
+        <button type="button" title="Toggle generated scene cards" (click)="toggleImages()">
+          {{ session()?.images === false ? 'Images off' : 'Images on' }}
+        </button>
+        <button type="button" title="Switch language" (click)="toggleLanguage()">
+          {{ (session()?.language ?? 'de').toUpperCase() }}
+        </button>
+      </div>
+    </header>
+
+    @if (setupOpen()) {
+      <app-character-setup [settings]="settings()" [busy]="busy()" (createSession)="create($event)" />
+    }
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <app-story-timeline [nodes]="session()?.nodes ?? []" [images]="session()?.images ?? true" />
+
+    <div class="action-dock">
+      @if (session()) {
+        <app-action-composer
+          [disabled]="busy() || !!session()?.dead"
+          [language]="session()?.language ?? 'de'"
+          (sendAction)="sendAction($event)"
+        />
+      }
+      <app-session-dock [session]="session()" />
+    </div>
+  </main>
+</div>

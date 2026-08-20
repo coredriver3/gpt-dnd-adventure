@@ -1,0 +1,12 @@
+{
+  "name": "gpt-dnd-adventure-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && ./mvnw spring-boot:run",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && ./mvnw test",
+    "build:frontend": "cd frontend && npm run build"
+  }
+}
