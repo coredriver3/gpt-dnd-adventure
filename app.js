@@ -15,6 +15,7 @@ const state = {
   inventory: ["weathered map", "knife", "ink kit"],
   effects: [],
   nodes: [],
+  character: null,
 };
 
 const encounters = {
@@ -42,6 +43,13 @@ const encounters = {
     "a charcoal burner who trades in secrets instead of coin",
     "a hilltop ruin where the moonlight has weight",
   ],
+};
+
+const settingLabels = {
+  "dark-fantasy": "Dark fantasy borderlands",
+  "arcane-city": "Arcane city intrigue",
+  "post-empire": "Post empire ruins",
+  "german-folklore": "German folklore woods",
 };
 
 const outcomes = [
@@ -82,6 +90,12 @@ function outcomeFor(total, danger) {
 }
 
 function renderStats() {
+  $("characterSummary").textContent = state.character
+    ? `${state.character.name} - ${state.character.concept}`
+    : "No character";
+  $("settingSummary").textContent = state.character
+    ? settingLabels[state.character.setting]
+    : "Create a new run first";
   $("healthText").textContent = `${state.health} / ${state.maxHealth}`;
   $("resolveText").textContent = `${state.resolve} / ${state.maxResolve}`;
   $("healthBar").style.setProperty("--value", `${Math.max(0, (state.health / state.maxHealth) * 100)}%`);
@@ -114,9 +128,7 @@ function addNode({ type, text, rollText = "no roll", imagePrompt, consequences =
 }
 
 function intro() {
-  const name = $("characterName").value.trim() || "Mara";
-  const concept = $("characterConcept").value.trim() || "traveller";
-  const setting = $("setting").value;
+  const { name, concept, setting } = state.character;
   const place = rand(encounters[setting]);
   addNode({
     type: "scene",
@@ -168,7 +180,7 @@ function commandMode(text) {
 }
 
 function narrateAction(text) {
-  const setting = $("setting").value;
+  const { setting } = state.character;
   const place = rand(encounters[setting]);
   const danger = Math.min(4, Math.floor(state.turn / 3) + (state.health <= 4 ? 1 : 0));
   const natural = needsRoll(text) ? roll(20) : null;
@@ -244,7 +256,11 @@ function describe(grade, language) {
   return language === "de" ? de[grade] : en[grade];
 }
 
-function resetGame() {
+function createGame() {
+  const name = $("characterName").value.trim() || "Mara";
+  const concept = $("characterConcept").value.trim() || "traveller";
+  const setting = $("setting").value;
+
   Object.assign(state, {
     dead: false,
     turn: 0,
@@ -254,9 +270,36 @@ function resetGame() {
     inventory: ["weathered map", "knife", "ink kit"],
     effects: [],
     nodes: [],
+    character: { name, concept, setting },
   });
   $("timeline").innerHTML = "";
+  $("setupForm").hidden = true;
+  $("actionForm").hidden = false;
   intro();
+}
+
+$("setupForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  createGame();
+});
+
+function showSetup() {
+  Object.assign(state, {
+    dead: false,
+    turn: 0,
+    health: 10,
+    resolve: 6,
+    resources: { coin: 12, rations: 3, torch: 2 },
+    inventory: ["weathered map", "knife", "ink kit"],
+    effects: [],
+    nodes: [],
+    character: null,
+  });
+  $("timeline").innerHTML = "";
+  $("setupForm").hidden = false;
+  $("actionForm").hidden = true;
+  renderStats();
+  $("characterName").focus();
 }
 
 $("actionForm").addEventListener("submit", (event) => {
@@ -264,6 +307,11 @@ $("actionForm").addEventListener("submit", (event) => {
   const input = $("playerInput");
   const value = input.value.trim();
   input.classList.remove("invalid");
+
+  if (!state.character) {
+    showSetup();
+    return;
+  }
 
   if (state.dead) {
     addNode({ type: "system", text: "This character is dead. Start a new game.", consequences: [{ text: "fatal state", bad: true }] });
@@ -285,7 +333,7 @@ $("actionForm").addEventListener("submit", (event) => {
   input.value = "";
 });
 
-$("newGameBtn").addEventListener("click", resetGame);
+$("newGameBtn").addEventListener("click", showSetup);
 $("imageToggle").addEventListener("click", () => {
   state.images = !state.images;
   $("imageToggle").textContent = state.images ? "Images on" : "Images off";
@@ -302,4 +350,4 @@ $("languageToggle").addEventListener("click", () => {
       : "What do you do? Or [inventory], [status], [roll d20+2] ...";
 });
 
-resetGame();
+showSetup();

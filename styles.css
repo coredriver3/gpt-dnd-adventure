@@ -54,24 +54,14 @@ button:hover {
 }
 
 .app-shell {
-  display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   min-height: 100dvh;
-}
-
-.side-panel {
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
-  background: #171914;
-  padding: 20px;
-  min-width: 0;
-  overflow: visible;
 }
 
 .brand {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 24px;
+  min-width: 0;
 }
 
 .mark {
@@ -85,31 +75,19 @@ button:hover {
   clip-path: polygon(50% 0, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%);
 }
 
-.brand p,
-.brand small {
+.brand p {
   margin: 0;
 }
 
-.brand p {
-  font-weight: 800;
-}
-
-.brand small,
 .eyebrow,
 label,
 .meter span,
 .compact-list,
-.rules,
 .node-type {
   color: var(--muted);
 }
 
-.panel-section {
-  padding: 18px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-section h2 {
+.bottom-panel h2 {
   margin: 0 0 12px;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -134,17 +112,11 @@ select {
   padding: 0 12px;
 }
 
-.grid-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
 .meter {
   position: relative;
   display: grid;
   gap: 6px;
-  margin-bottom: 12px;
+  align-content: start;
 }
 
 .meter strong {
@@ -186,7 +158,6 @@ select {
 }
 
 .tag-list li,
-.rules span,
 .consequences span {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -195,16 +166,9 @@ select {
   font-size: 0.82rem;
 }
 
-.rules {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.82rem;
-}
-
 .game-area {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 100dvh;
 }
@@ -237,6 +201,36 @@ h1 {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.setup-panel {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #171914;
+}
+
+.setup-panel[hidden] {
+  display: none;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1.3fr) minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.setup-grid label {
+  margin: 0;
+}
+
+.setup-grid button {
+  min-width: 104px;
+  background: var(--accent);
+  color: #171204;
+  font-weight: 900;
 }
 
 .timeline-wrap {
@@ -362,16 +356,24 @@ h1 {
   border-color: rgba(143, 198, 107, 0.45);
 }
 
+.action-dock {
+  background: #171914;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  padding: 16px 24px 20px;
+  padding: 16px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(20, 22, 17, 0.96);
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
+}
+
+.composer[hidden] {
+  display: none;
 }
 
 .composer button {
@@ -383,6 +385,31 @@ h1 {
 
 .invalid {
   outline: 2px solid var(--danger);
+}
+
+.bottom-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.2fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) minmax(220px, 1.4fr);
+  gap: 18px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #171914;
+}
+
+.character-summary {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.character-summary strong,
+.character-summary span {
+  overflow-wrap: anywhere;
+}
+
+.character-summary span {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .dead .composer button,
@@ -400,27 +427,12 @@ h1 {
     height: 100dvh;
   }
 
-  .side-panel,
   .timeline-wrap {
     overflow: auto;
   }
 }
 
-@media (max-width: 860px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .side-panel {
-    border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .game-area {
-    order: -1;
-    min-height: 100dvh;
-  }
-
+@media (max-width: 960px) {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
@@ -430,13 +442,28 @@ h1 {
     justify-content: flex-start;
   }
 
+  .setup-grid,
+  .bottom-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .setup-grid button,
+  .character-summary {
+    grid-column: 1 / -1;
+  }
+
   .timeline-wrap {
-    padding-bottom: 128px;
+    padding-bottom: 24px;
+  }
+
+  .action-dock {
+    position: static;
   }
 }
 
 @media (max-width: 520px) {
-  .grid-two,
+  .setup-grid,
+  .bottom-panel,
   .composer {
     grid-template-columns: 1fr;
   }
@@ -444,7 +471,8 @@ h1 {
   .timeline-wrap,
   .topbar,
   .composer,
-  .side-panel {
+  .setup-panel,
+  .bottom-panel {
     padding-left: 14px;
     padding-right: 14px;
   }
