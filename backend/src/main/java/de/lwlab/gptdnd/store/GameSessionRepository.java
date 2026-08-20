@@ -1,26 +1,29 @@
 package de.lwlab.gptdnd.store;
 
 import de.lwlab.gptdnd.domain.GameSession;
+import de.lwlab.gptdnd.persistence.GameSessionEntity;
+import de.lwlab.gptdnd.persistence.JpaGameSessionCrudRepository;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class GameSessionRepository {
-    private final ConcurrentMap<String, GameSession> sessions = new ConcurrentHashMap<>();
+    private final JpaGameSessionCrudRepository repository;
+
+    public GameSessionRepository(JpaGameSessionCrudRepository repository) {
+        this.repository = repository;
+    }
 
     public GameSession save(GameSession session) {
-        sessions.put(session.id(), session);
-        return session;
+        return repository.save(GameSessionEntity.fromDomain(session)).toDomain();
     }
 
     public Optional<GameSession> findById(String id) {
-        return Optional.ofNullable(sessions.get(id));
+        return repository.findById(id).map(GameSessionEntity::toDomain);
     }
 
     public Collection<GameSession> findAll() {
-        return sessions.values();
+        return repository.findAll().stream().map(GameSessionEntity::toDomain).toList();
     }
 }
