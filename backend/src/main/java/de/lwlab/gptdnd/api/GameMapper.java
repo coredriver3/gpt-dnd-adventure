@@ -28,17 +28,35 @@ final class GameMapper {
                 session.maxHealth(),
                 session.resolve(),
                 session.maxResolve(),
+                session.location(),
                 session.resources(),
                 session.inventory(),
                 session.effects(),
+                session.suggestedActions(),
                 session.nodes().stream().map(GameMapper::node).toList(),
                 session.createdAt());
+    }
+
+    static SessionSummaryResponse summary(GameSession session) {
+        return new SessionSummaryResponse(
+                session.id(),
+                session.character().name(),
+                session.character().concept(),
+                setting(session.character().setting()),
+                session.location(),
+                session.turn(),
+                session.health(),
+                session.maxHealth(),
+                session.dead(),
+                session.createdAt(),
+                session.lastPlayedAt());
     }
 
     private static StoryNodeResponse node(StoryNode node) {
         return new StoryNodeResponse(
                 node.id(),
                 node.type(),
+                node.action(),
                 node.text(),
                 node.rollText(),
                 node.imagePrompt(),

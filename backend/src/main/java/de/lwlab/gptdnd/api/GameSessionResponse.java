@@ -15,9 +15,11 @@ public record GameSessionResponse(
         int maxHealth,
         int resolve,
         int maxResolve,
+        String location,
         Map<String, Integer> resources,
         List<String> inventory,
         List<String> effects,
+        List<String> suggestedActions,
         List<StoryNodeResponse> nodes,
         Instant createdAt) {
 }

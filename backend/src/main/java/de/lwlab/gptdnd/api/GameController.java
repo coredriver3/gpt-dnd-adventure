@@ -27,6 +27,11 @@ public class GameController {
         return gameService.settings().stream().map(GameMapper::setting).toList();
     }
 
+    @GetMapping("/sessions")
+    public List<SessionSummaryResponse> sessions() {
+        return gameService.list().stream().map(GameMapper::summary).toList();
+    }
+
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
     public GameSessionResponse create(@Valid @RequestBody CreateSessionRequest request) {

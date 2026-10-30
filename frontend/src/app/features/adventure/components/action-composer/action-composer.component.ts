@@ -9,7 +9,9 @@ import { FormsModule } from '@angular/forms';
 })
 export class ActionComposerComponent {
   @Input() disabled = false;
+  @Input() busy = false;
   @Input() language: 'de' | 'en' = 'de';
+  @Input() suggestions: string[] = [];
   @Output() sendAction = new EventEmitter<string>();
 
   protected text = '';
@@ -23,7 +25,14 @@ export class ActionComposerComponent {
     this.text = '';
   }
 
+  choose(suggestion: string): void {
+    this.sendAction.emit(suggestion);
+  }
+
   placeholder(): string {
+    if (this.busy) {
+      return this.language === 'de' ? 'Der Erzähler denkt nach ...' : 'The narrator is thinking ...';
+    }
     return this.language === 'de'
       ? 'Was tust du? Oder [inventory], [status], [roll d20+2] ...'
       : 'What do you do? Or [inventory], [status], [roll d20+2] ...';

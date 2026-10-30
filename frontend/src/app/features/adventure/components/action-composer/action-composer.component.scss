@@ -18,7 +18,7 @@ input {
   font: inherit;
 }
 
-button {
+.act {
   min-width: 92px;
   min-height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -40,5 +40,46 @@ button:disabled {
     grid-template-columns: 1fr;
     padding-left: 14px;
     padding-right: 14px;
+  }
+}
+
+.suggestions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion {
+  border: 1px solid rgba(90, 182, 165, 0.45);
+  border-radius: 999px;
+  background: rgba(90, 182, 165, 0.08);
+  color: var(--text);
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion:hover:not(:disabled) {
+  background: rgba(90, 182, 165, 0.2);
+}
+
+.suggestion:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+@media (max-width: 520px) {
+  .suggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .suggestion {
+    flex: none;
+    white-space: nowrap;
   }
 }

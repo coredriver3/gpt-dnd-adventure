@@ -18,10 +18,12 @@ public class GameSession {
     private int maxHealth = 10;
     private int resolve = 6;
     private int maxResolve = 6;
+    private String location = "";
     private final Map<String, Integer> resources = new LinkedHashMap<>();
     private final List<String> inventory = new ArrayList<>();
     private final List<String> effects = new ArrayList<>();
     private final List<StoryNode> nodes = new ArrayList<>();
+    private final List<String> suggestedActions = new ArrayList<>();
 
     public GameSession(String id, CharacterProfile character, Instant createdAt) {
         this.id = id;
@@ -117,5 +119,21 @@ public class GameSession {
 
     public List<StoryNode> nodes() {
         return nodes;
+    }
+
+    public String location() {
+        return location;
+    }
+
+    public void location(String location) {
+        this.location = location == null ? "" : location;
+    }
+
+    public List<String> suggestedActions() {
+        return suggestedActions;
+    }
+
+    public Instant lastPlayedAt() {
+        return nodes.isEmpty() ? createdAt : nodes.getLast().createdAt();
     }
 }

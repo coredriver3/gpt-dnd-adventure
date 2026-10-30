@@ -1,7 +1,13 @@
 package de.lwlab.gptdnd.service.story;
 
-public interface StoryProvider {
-    StoryDraft intro(StoryPrompt prompt);
+import de.lwlab.gptdnd.domain.GameSession;
+import de.lwlab.gptdnd.service.rules.RollResult;
 
-    StoryDraft action(StoryPrompt prompt);
+public interface StoryProvider {
+    SceneIntro intro(GameSession session);
+
+    ActionPlan plan(GameSession session, String action);
+
+    /** {@code roll} is null when the plan needed no roll. */
+    TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll);
 }

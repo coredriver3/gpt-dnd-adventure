@@ -1,60 +1,113 @@
 package de.lwlab.gptdnd.service.story;
 
 import de.lwlab.gptdnd.domain.CharacterProfile;
+import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.Language;
-import org.springframework.stereotype.Component;
+import de.lwlab.gptdnd.service.rules.Degree;
+import de.lwlab.gptdnd.service.rules.RollResult;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-@Component
+/** Deterministic, offline narrator used when no Claude API key is configured. */
 public class LocalStoryProvider implements StoryProvider {
     @Override
-    public StoryDraft intro(StoryPrompt prompt) {
-        CharacterProfile character = prompt.session().character();
-        String text = prompt.session().language() == Language.DE
+    public SceneIntro intro(GameSession session) {
+        CharacterProfile character = session.character();
+        String place = random(character.setting().places());
+        String text = session.language() == Language.DE
                 ? "%s, %s, erreicht %s. Die Luft schmeckt nach Regen und Metall. Deine Vorräte sind knapp, und jede falsche Entscheidung kann bleibende Folgen haben."
-                        .formatted(character.name(), character.concept(), prompt.place())
+                        .formatted(character.name(), character.concept(), place)
                 : "%s, %s, reaches %s. The air tastes of rain and metal. Supplies are thin, and bad decisions can leave permanent scars."
-                        .formatted(character.name(), character.concept(), prompt.place());
-        return new StoryDraft(text, "%s, %s, cinematic adventure concept art"
-                .formatted(character.setting().id(), prompt.place()));
+                        .formatted(character.name(), character.concept(), place);
+        return new SceneIntro(text, place, suggestions(session.language()),
+                "%s, %s, cinematic adventure concept art".formatted(character.setting().id(), place));
     }
 
     @Override
-    public StoryDraft action(StoryPrompt prompt) {
-        String description = describe(prompt.outcome().grade(), prompt.session().language());
-        String deathLine = prompt.session().dead()
-                ? prompt.session().language() == Language.DE
-                        ? " Das ist kein Rückschlag mehr: Deine Geschichte endet hier."
-                        : " This is no longer a setback: your story ends here."
-                : "";
-        String text = prompt.session().language() == Language.DE
-                ? "Du willst: \"%s\". In %s kippt die Lage in Richtung %s. Gute Würfe öffnen nicht automatisch Schatzkammern; schlechte Würfe schaffen Probleme, die zur Szene passen. %s%s"
-                        .formatted(prompt.action(), prompt.place(), prompt.outcome().grade(), description, deathLine)
-                : "You attempt: \"%s\". At %s, the situation turns into a %s. Good rolls do not automatically create treasure; bad rolls create problems that fit the scene. %s%s"
-                        .formatted(prompt.action(), prompt.place(), prompt.outcome().grade(), description, deathLine);
-        return new StoryDraft(text, "%s, %s, player action: %s, %s, cinematic fantasy"
-                .formatted(prompt.session().character().setting().id(), prompt.place(), prompt.action(), prompt.outcome().grade()));
+    public ActionPlan plan(GameSession session, String action) {
+        if (!validInput(action)) {
+            String rejection = session.language() == Language.DE
+                    ? "Beschreibe eine zusammenhängende Handlung, die in die aktuelle Szene passt."
+                    : "Describe a coherent action that fits the current scene.";
+            return new ActionPlan(false, rejection, false, "", 0, 0);
+        }
+        boolean rollNeeded = !action.matches("(?i)^(look|listen|warte|schaue|untersuche vorsichtig|inspect|observe)$");
+        int danger = Math.min(4, Math.floorDiv(session.turn(), 3) + (session.health() <= 4 ? 1 : 0));
+        return new ActionPlan(true, "", rollNeeded, rollNeeded ? "Luck" : "", 10 + danger, 0);
     }
 
-    private String describe(String grade, Language language) {
+    @Override
+    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll) {
+        Degree degree = roll == null ? Degree.NO_ROLL : roll.degree();
+        Language language = session.language();
+        String place = random(session.character().setting().places());
+        String text = language == Language.DE
+                ? "Du willst: \"%s\". In %s kippt die Lage in Richtung %s. %s".formatted(action, place, degree.label(), describe(degree, language))
+                : "You attempt: \"%s\". At %s, the situation turns into a %s. %s".formatted(action, place, degree.label(), describe(degree, language));
+        int health = switch (degree) {
+            case CRITICAL_FAILURE -> -4;
+            case FAILURE -> -2;
+            case PARTIAL_SUCCESS -> -1;
+            default -> 0;
+        };
+        int resolve = switch (degree) {
+            case CRITICAL_FAILURE, PARTIAL_SUCCESS -> -1;
+            case CRITICAL_SUCCESS -> 1;
+            default -> 0;
+        };
+        boolean goodRoll = degree == Degree.SUCCESS || degree == Degree.CRITICAL_SUCCESS;
+        boolean badRoll = degree == Degree.FAILURE || degree == Degree.CRITICAL_FAILURE;
+        List<String> gained = goodRoll && chance(58)
+                ? List.of(random(List.of("silver token", "clean bandage", "sealed clue", "warm meal")))
+                : List.of();
+        int rations = badRoll && chance(65) && session.resources().getOrDefault("rations", 0) > 0 ? -1 : 0;
+        return new TurnOutcome(text, place, health, resolve, gained, List.of(), 0, rations, 0, List.of(), List.of(), false,
+                suggestions(language), "%s, %s, player action: %s, %s, cinematic fantasy"
+                        .formatted(session.character().setting().id(), place, action, degree.label()));
+    }
+
+    private String describe(Degree degree, Language language) {
         if (language == Language.EN) {
-            return switch (grade) {
-                case "critical failure" -> "You get what you wanted only if you bleed for it; otherwise the world takes something important.";
-                case "failure" -> "The attempt fails and forces you into a worse position.";
-                case "mixed result" -> "You make progress, but pay for it immediately.";
-                case "success with cost" -> "You reach your goal, yet the situation stays dangerous.";
-                case "clean success" -> "You clearly prevail and take control of the moment.";
-                case "critical success" -> "You dominate the scene, but the reward stays plausible.";
-                default -> "You gather detail without escalating the situation directly.";
+            return switch (degree) {
+                case CRITICAL_FAILURE -> "The world takes something important from you.";
+                case FAILURE -> "The attempt fails and forces you into a worse position.";
+                case PARTIAL_SUCCESS -> "You reach your goal, yet you pay for it immediately.";
+                case SUCCESS -> "You clearly prevail and take control of the moment.";
+                case CRITICAL_SUCCESS -> "You dominate the scene, but the reward stays plausible.";
+                case NO_ROLL -> "You gather detail without escalating the situation.";
             };
         }
-        return switch (grade) {
-            case "critical failure" -> "Du bekommst, was du wolltest, nur wenn du dafür blutest; sonst nimmt dir die Welt etwas Wichtiges.";
-            case "failure" -> "Der Versuch scheitert und zwingt dich in eine schlechtere Position.";
-            case "mixed result" -> "Du machst Fortschritt, aber bezahlst sofort dafür.";
-            case "success with cost" -> "Du erreichst dein Ziel, doch die Situation bleibt gefährlich.";
-            case "clean success" -> "Du setzt dich klar durch und gewinnst Kontrolle über den Moment.";
-            case "critical success" -> "Du dominierst die Szene, aber die Belohnung bleibt plausibel.";
-            default -> "Du sammelst Details, ohne die Lage direkt zu eskalieren.";
+        return switch (degree) {
+            case CRITICAL_FAILURE -> "Die Welt nimmt dir etwas Wichtiges.";
+            case FAILURE -> "Der Versuch scheitert und zwingt dich in eine schlechtere Position.";
+            case PARTIAL_SUCCESS -> "Du erreichst dein Ziel, aber bezahlst sofort dafür.";
+            case SUCCESS -> "Du setzt dich klar durch und gewinnst Kontrolle über den Moment.";
+            case CRITICAL_SUCCESS -> "Du dominierst die Szene, aber die Belohnung bleibt plausibel.";
+            case NO_ROLL -> "Du sammelst Details, ohne die Lage zu eskalieren.";
         };
+    }
+
+    private List<String> suggestions(Language language) {
+        return language == Language.DE
+                ? List.of("Schaue dich vorsichtig um", "Suche nach einem sicheren Unterschlupf", "Sprich die nächste Person an")
+                : List.of("Look around carefully", "Search for a safe shelter", "Talk to the nearest person");
+    }
+
+    private boolean validInput(String text) {
+        if (text.matches("(?i).*(https?:|<script|drop table|ignore previous).*")) {
+            return false;
+        }
+        if (text.split("\\s+").length < 2) {
+            return false;
+        }
+        return text.matches("[\\p{L}\\p{N}\\s.,!?;:'\"()/+\\-]+");
+    }
+
+    private String random(List<String> values) {
+        return values.get(ThreadLocalRandom.current().nextInt(values.size()));
+    }
+
+    private boolean chance(int percent) {
+        return ThreadLocalRandom.current().nextInt(100) < percent;
     }
 }

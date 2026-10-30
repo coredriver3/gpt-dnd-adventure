@@ -51,6 +51,15 @@ public class GameSessionEntity {
     private int resolve;
     private int maxResolve;
 
+    @Column(length = 200)
+    private String location;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "session_suggested_actions", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "suggestion", length = 200)
+    private List<String> suggestedActions = new ArrayList<>();
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "session_resources", joinColumns = @JoinColumn(name = "session_id"))
     @MapKeyColumn(name = "resource_key")
@@ -94,6 +103,8 @@ public class GameSessionEntity {
         entity.resources = new LinkedHashMap<>(session.resources());
         entity.inventory = new ArrayList<>(session.inventory());
         entity.effects = new ArrayList<>(session.effects());
+        entity.location = session.location();
+        entity.suggestedActions = new ArrayList<>(session.suggestedActions());
         for (int i = 0; i < session.nodes().size(); i++) {
             entity.nodes.add(StoryNodeEntity.fromDomain(session.nodes().get(i), entity, i));
         }
@@ -119,6 +130,8 @@ public class GameSessionEntity {
         session.inventory().addAll(inventory);
         session.effects().clear();
         session.effects().addAll(effects);
+        session.location(location);
+        session.suggestedActions().addAll(suggestedActions);
         session.nodes().clear();
         session.nodes().addAll(nodes.stream().map(StoryNodeEntity::toDomain).toList());
         return session;

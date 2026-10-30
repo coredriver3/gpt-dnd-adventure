@@ -19,6 +19,7 @@ export interface Consequence {
 export interface StoryNode {
   id: string;
   type: string;
+  action: string | null;
   text: string;
   rollText: string;
   imagePrompt: string | null;
@@ -37,9 +38,11 @@ export interface GameSession {
   maxHealth: number;
   resolve: number;
   maxResolve: number;
+  location: string;
   resources: Record<string, number>;
   inventory: string[];
   effects: string[];
+  suggestedActions: string[];
   nodes: StoryNode[];
   createdAt: string;
 }
@@ -48,4 +51,19 @@ export interface CreateSessionRequest {
   name: string;
   concept: string;
   setting: string;
+  language?: 'de' | 'en';
+}
+
+export interface SessionSummary {
+  id: string;
+  name: string;
+  concept: string;
+  setting: Setting;
+  location: string;
+  turn: number;
+  health: number;
+  maxHealth: number;
+  dead: boolean;
+  createdAt: string;
+  lastPlayedAt: string;
 }

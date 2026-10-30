@@ -1,11 +1,6 @@
 .app-shell {
-  min-height: 100dvh;
-}
-
-.game-area {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  min-width: 0;
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 100dvh;
 }
 
@@ -14,7 +9,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px 24px;
+  padding: 14px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(20, 22, 17, 0.94);
 }
@@ -29,8 +24,8 @@
 .mark {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   color: #15120a;
   font-weight: 900;
   background: var(--accent);
@@ -38,7 +33,7 @@
 }
 
 .eyebrow {
-  margin: 0 0 5px;
+  margin: 0 0 4px;
   color: var(--muted);
   text-transform: uppercase;
   font-size: 0.75rem;
@@ -46,7 +41,7 @@
 
 h1 {
   margin: 0;
-  font-size: clamp(1.35rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.3rem, 2.2vw, 2rem);
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
@@ -69,8 +64,39 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button:hover,
+button.current {
   border-color: var(--accent);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 0;
+}
+
+/* Story column: setup and error on top, scrollable timeline in the middle, composer pinned at the bottom. */
+.story-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.composer {
+  flex: none;
+}
+
+.sidebar {
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  background: #171914;
 }
 
 .error {
@@ -81,49 +107,51 @@ button:hover {
   border-bottom: 1px solid rgba(216, 105, 95, 0.28);
 }
 
-.action-dock {
-  background: #171914;
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-}
-
 @media (min-width: 861px) {
-  :host,
-  .app-shell,
-  .game-area {
+  .app-shell {
     height: 100dvh;
   }
 }
 
-@media (max-width: 960px) {
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+
+/* Narrow screens: one column, the page scrolls, character state below the story, composer sticks to the bottom. */
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
   }
 
-  .toolbar {
-    justify-content: flex-start;
+  .composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
   }
 
-  .action-dock {
-    position: static;
+  .sidebar {
+    overflow: visible;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
 
 @media (max-width: 520px) {
   .topbar {
-    gap: 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
     padding: 14px;
   }
 
   .toolbar {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    width: 100%;
   }
 
-  .toolbar button {
+  .toolbar > * {
     min-width: 0;
     padding-left: 8px;
     padding-right: 8px;

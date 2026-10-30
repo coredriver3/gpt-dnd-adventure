@@ -1,0 +1,32 @@
+<button
+  type="button"
+  class="trigger"
+  title="Settings"
+  aria-haspopup="true"
+  [attr.aria-expanded]="open()"
+  (click)="open.set(!open())"
+>
+  <span aria-hidden="true">&#9881;</span> Settings
+</button>
+
+@if (open()) {
+  <div class="menu" role="menu">
+    <div class="row">
+      <span>Language</span>
+      <div class="segmented" role="group" aria-label="Language">
+        <button type="button" [class.selected]="language === 'de'" (click)="chooseLanguage('de')">DE</button>
+        <button type="button" [class.selected]="language === 'en'" (click)="chooseLanguage('en')">EN</button>
+      </div>
+    </div>
+
+    <label class="row" [class.disabled]="!imagesAvailable">
+      <span>
+        Scene images
+        @if (!imagesAvailable) {
+          <small>Start a game first</small>
+        }
+      </span>
+      <input type="checkbox" role="switch" [checked]="images" [disabled]="!imagesAvailable" (change)="toggleImages.emit()" />
+    </label>
+  </div>
+}

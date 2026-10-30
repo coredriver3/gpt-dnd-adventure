@@ -27,6 +27,9 @@ public class StoryNodeEntity {
 
     private String type;
 
+    @Column(length = 500)
+    private String action;
+
     @Column(length = 5000)
     private String text;
 
@@ -54,6 +57,7 @@ public class StoryNodeEntity {
     private StoryNodeEntity(StoryNode node, GameSessionEntity session, int position) {
         this.id = node.id();
         this.type = node.type();
+        this.action = node.action();
         this.text = node.text();
         this.rollText = node.rollText();
         this.imagePrompt = node.imagePrompt();
@@ -71,6 +75,7 @@ public class StoryNodeEntity {
         return new StoryNode(
                 id,
                 type,
+                action,
                 text,
                 rollText,
                 imagePrompt,

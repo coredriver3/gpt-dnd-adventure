@@ -1,0 +1,94 @@
+:host {
+  position: relative;
+  display: inline-block;
+}
+
+button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #2a2e25;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+.trigger {
+  white-space: nowrap;
+  width: 100%;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  width: 260px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 6px;
+}
+
+.row small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+label.row {
+  cursor: pointer;
+}
+
+label.row:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.row.disabled {
+  cursor: default;
+  color: var(--muted);
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.segmented button.selected {
+  background: var(--accent);
+  color: #171204;
+  font-weight: 800;
+}
+
+input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}

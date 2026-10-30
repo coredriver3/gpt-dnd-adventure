@@ -6,6 +6,7 @@ import java.util.List;
 public record StoryNodeResponse(
         String id,
         String type,
+        String action,
         String text,
         String rollText,
         String imagePrompt,

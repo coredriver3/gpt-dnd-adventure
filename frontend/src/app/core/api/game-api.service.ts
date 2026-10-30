@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateSessionRequest, GameSession, Setting } from '../models/game.models';
+import { CreateSessionRequest, GameSession, SessionSummary, Setting } from '../models/game.models';
 
 @Injectable({ providedIn: 'root' })
 export class GameApiService {
@@ -10,6 +10,14 @@ export class GameApiService {
 
   settings(): Observable<Setting[]> {
     return this.http.get<Setting[]>(`${this.baseUrl}/settings`);
+  }
+
+  listSessions(): Observable<SessionSummary[]> {
+    return this.http.get<SessionSummary[]>(`${this.baseUrl}/sessions`);
+  }
+
+  getSession(sessionId: string): Observable<GameSession> {
+    return this.http.get<GameSession>(`${this.baseUrl}/sessions/${sessionId}`);
   }
 
   createSession(request: CreateSessionRequest): Observable<GameSession> {

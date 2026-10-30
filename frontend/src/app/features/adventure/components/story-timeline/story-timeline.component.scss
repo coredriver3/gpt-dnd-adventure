@@ -1,6 +1,10 @@
+:host {
+  display: block;
+  overflow-y: auto;
+}
+
 .timeline-wrap {
   min-width: 0;
-  overflow: auto;
   padding: 26px 24px 34px;
 }
 
@@ -162,4 +166,11 @@
     aspect-ratio: 4 / 3;
     min-height: 0;
   }
+}
+
+.node-action {
+  margin: 0 0 10px;
+  color: var(--accent-2);
+  font-style: italic;
+  overflow-wrap: anywhere;
 }

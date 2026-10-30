@@ -1,11 +1,21 @@
 <form class="composer" (ngSubmit)="submit()">
+  @if (suggestions.length > 0) {
+    <div class="suggestions">
+      @for (suggestion of suggestions; track suggestion) {
+        <button type="button" class="suggestion" [disabled]="disabled" (click)="choose(suggestion)">
+          {{ suggestion }}
+        </button>
+      }
+    </div>
+  }
   <input
     name="action"
     type="text"
     autocomplete="off"
+    maxlength="500"
     [placeholder]="placeholder()"
     [disabled]="disabled"
     [(ngModel)]="text"
   />
-  <button type="submit" [disabled]="disabled">Act</button>
+  <button type="submit" class="act" [disabled]="disabled">{{ busy ? '...' : 'Act' }}</button>
 </form>

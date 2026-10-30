@@ -1,36 +1,71 @@
-<section class="bottom-panel" aria-label="Character state">
-  <div class="character-summary">
-    <strong>{{ session ? session.character.name + ' - ' + session.character.concept : 'No character' }}</strong>
-    <span>{{ session ? session.character.setting.label : 'Create a new run first' }}</span>
-  </div>
-
-  <div class="meter danger">
-    <span>Health</span>
-    <strong>{{ session?.health ?? 10 }} / {{ session?.maxHealth ?? 10 }}</strong>
-    <i [style.--value.%]="percent(session?.health ?? 10, session?.maxHealth ?? 10)"></i>
-  </div>
-
-  <div class="meter">
-    <span>Resolve</span>
-    <strong>{{ session?.resolve ?? 6 }} / {{ session?.maxResolve ?? 6 }}</strong>
-    <i [style.--value.%]="percent(session?.resolve ?? 6, session?.maxResolve ?? 6)"></i>
-  </div>
-
-  <div>
-    <h2>Resources</h2>
-    <ul class="compact-list">
-      @for (resource of (session?.resources ?? fallbackResources) | keyvalue; track resource.key) {
-        <li><span>{{ resource.key }}</span><strong>{{ resource.value }}</strong></li>
+<section class="side-panel">
+  @if (session; as s) {
+    <div class="character-summary">
+      <strong>{{ s.character.name }}</strong>
+      <span class="concept">{{ s.character.concept }}</span>
+      <span>{{ s.character.setting.label }}</span>
+      @if (s.location) {
+        <span class="location">{{ s.location }}</span>
       }
-    </ul>
-  </div>
-
-  <div>
-    <h2>Inventory</h2>
-    <ul class="tag-list">
-      @for (item of session?.inventory ?? ['weathered map', 'knife', 'ink kit']; track item) {
-        <li>{{ item }}</li>
+      @if (s.dead) {
+        <span class="dead">Dead</span>
       }
-    </ul>
-  </div>
+    </div>
+
+    <div class="meters">
+      <div class="meter danger">
+        <div class="meter-head">
+          <span>Health</span>
+          <strong>{{ s.health }} / {{ s.maxHealth }}</strong>
+        </div>
+        <div class="meter-track"><i [style.--value.%]="percent(s.health, s.maxHealth)"></i></div>
+      </div>
+
+      <div class="meter">
+        <div class="meter-head">
+          <span>Resolve</span>
+          <strong>{{ s.resolve }} / {{ s.maxResolve }}</strong>
+        </div>
+        <div class="meter-track"><i [style.--value.%]="percent(s.resolve, s.maxResolve)"></i></div>
+      </div>
+    </div>
+
+    <div>
+      <h2>Resources</h2>
+      <ul class="compact-list">
+        @for (resource of s.resources | keyvalue; track resource.key) {
+          <li><span>{{ resource.key }}</span><strong>{{ resource.value }}</strong></li>
+        }
+      </ul>
+    </div>
+
+    <div>
+      <h2>Inventory</h2>
+      @if (s.inventory.length) {
+        <ul class="tag-list">
+          @for (item of s.inventory; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">Empty</p>
+      }
+    </div>
+
+    @if (s.effects.length) {
+      <div>
+        <h2>Effects</h2>
+        <ul class="tag-list">
+          @for (effect of s.effects; track effect) {
+            <li class="effect">{{ effect }}</li>
+          }
+        </ul>
+      </div>
+    }
+  } @else {
+    <div class="character-summary">
+      <strong>No character</strong>
+      <span>Load a saved game or start a new one to see health, resources and inventory here.</span>
+    </div>
+  }
 </section>

@@ -1,0 +1,48 @@
+<section class="session-list" aria-label="Saved games">
+  <header class="list-header">
+    <div>
+      <h2>Saved games</h2>
+      <p>{{ loading ? 'Loading ...' : sessions.length + (sessions.length === 1 ? ' game' : ' games') }}</p>
+    </div>
+    <div class="list-actions">
+      <button type="button" class="primary" (click)="newGame.emit()">New game</button>
+      @if (activeId) {
+        <button type="button" (click)="closeList.emit()">Back to game</button>
+      }
+    </div>
+  </header>
+
+  @if (!loading && sessions.length === 0) {
+    <p class="empty">No saved games yet. Start a new one.</p>
+  }
+
+  <ul class="cards">
+    @for (session of sessions; track session.id) {
+      <li>
+        <button
+          type="button"
+          class="card"
+          [class.active]="session.id === activeId"
+          [class.dead]="session.dead"
+          (click)="openSession.emit(session.id)"
+        >
+          <span class="card-head">
+            <strong>{{ session.name }}</strong>
+            @if (session.dead) {
+              <span class="badge bad">dead</span>
+            } @else if (session.id === activeId) {
+              <span class="badge">current</span>
+            }
+          </span>
+          <span class="concept">{{ session.concept }}</span>
+          <span class="meta">{{ session.setting.label }}</span>
+          @if (session.location) {
+            <span class="location">{{ session.location }}</span>
+          }
+          <span class="health" aria-hidden="true"><i [style.--value.%]="percent(session.health, session.maxHealth)"></i></span>
+          <span class="meta">Turn {{ session.turn }} · {{ session.lastPlayedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+</section>

@@ -1,43 +1,66 @@
 <div class="app-shell">
-  <main class="game-area">
-    <header class="topbar">
-      <div class="brand">
-        <span class="mark">20</span>
-        <div>
-          <p class="eyebrow">Prototype</p>
-          <h1>GPT Dice Adventure</h1>
-        </div>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">20</span>
+      <div>
+        <p class="eyebrow">Prototype</p>
+        <h1>GPT Dice Adventure</h1>
       </div>
-      <div class="toolbar">
-        <button type="button" title="Start new game" (click)="newGame()">New</button>
-        <button type="button" title="Toggle generated scene cards" (click)="toggleImages()">
-          {{ session()?.images === false ? 'Images off' : 'Images on' }}
-        </button>
-        <button type="button" title="Switch language" (click)="toggleLanguage()">
-          {{ (session()?.language ?? 'de').toUpperCase() }}
-        </button>
-      </div>
-    </header>
-
-    @if (setupOpen()) {
-      <app-character-setup [settings]="settings()" [busy]="busy()" (createSession)="create($event)" />
-    }
-
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-
-    <app-story-timeline [nodes]="session()?.nodes ?? []" [images]="session()?.images ?? true" />
-
-    <div class="action-dock">
-      @if (session()) {
-        <app-action-composer
-          [disabled]="busy() || !!session()?.dead"
-          [language]="session()?.language ?? 'de'"
-          (sendAction)="sendAction($event)"
-        />
-      }
-      <app-session-dock [session]="session()" />
     </div>
-  </main>
+    <div class="toolbar">
+      <button type="button" title="Saved games" [class.current]="view() === 'sessions'" (click)="showSessions()">Games</button>
+      <button type="button" title="Start new game" [class.current]="view() === 'setup'" (click)="newGame()">New</button>
+      <app-settings-menu
+        [images]="session()?.images ?? true"
+        [imagesAvailable]="!!session()"
+        [language]="language()"
+        (toggleImages)="toggleImages()"
+        (setLanguage)="setLanguage($event)"
+      />
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="story-column">
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      @switch (view()) {
+        @case ('sessions') {
+          <app-session-list
+            class="fill"
+            [sessions]="sessions()"
+            [activeId]="session()?.id ?? null"
+            [loading]="sessionsLoading()"
+            (openSession)="openSession($event)"
+            (newGame)="newGame()"
+            (closeList)="view.set('play')"
+          />
+        }
+        @case ('setup') {
+          <app-character-setup [settings]="settings()" [busy]="busy()" (createSession)="create($event)" />
+          <div class="fill"></div>
+        }
+        @default {
+          <app-story-timeline class="fill" [nodes]="session()?.nodes ?? []" [images]="session()?.images ?? true" />
+
+          @if (session()) {
+            <app-action-composer
+              class="composer"
+              [disabled]="busy() || !!session()?.dead"
+              [busy]="busy()"
+              [language]="language()"
+              [suggestions]="session()?.dead ? [] : (session()?.suggestedActions ?? [])"
+              (sendAction)="sendAction($event)"
+            />
+          }
+        }
+      }
+    </main>
+
+    <aside class="sidebar" aria-label="Character state">
+      <app-session-dock [session]="session()" />
+    </aside>
+  </div>
 </div>
