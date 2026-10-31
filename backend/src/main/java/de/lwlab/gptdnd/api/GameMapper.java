@@ -13,6 +13,10 @@ final class GameMapper {
         return new SettingResponse(setting.id(), setting.label());
     }
 
+    private static SettingResponse setting(String setting) {
+        return new SettingResponse(setting, GameSetting.label(setting));
+    }
+
     static GameSessionResponse session(GameSession session) {
         return new GameSessionResponse(
                 session.id(),
@@ -59,6 +63,13 @@ final class GameMapper {
                 node.action(),
                 node.text(),
                 node.rollText(),
+                node.roll() == null ? null : new DiceRollResponse(
+                        node.roll().label(),
+                        node.roll().natural(),
+                        node.roll().modifier(),
+                        node.roll().difficulty(),
+                        node.roll().outcome(),
+                        node.roll().tone().name().toLowerCase()),
                 node.imagePrompt(),
                 node.consequences().stream().map(GameMapper::consequence).toList(),
                 node.createdAt());

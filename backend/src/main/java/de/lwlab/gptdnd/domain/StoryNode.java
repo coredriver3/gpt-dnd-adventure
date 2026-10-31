@@ -9,6 +9,7 @@ public record StoryNode(
         String action,
         String text,
         String rollText,
+        DiceRoll roll,
         String imagePrompt,
         List<Consequence> consequences,
         Instant createdAt) {

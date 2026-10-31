@@ -45,10 +45,12 @@ HTML entry point does neither.
 ## API
 
 - `GET /api/settings`
+- `GET /api/sessions`
 - `POST /api/sessions`
 - `GET /api/sessions/{id}`
 - `POST /api/sessions/{id}/actions`
 - `PATCH /api/sessions/{id}/preferences`
+- `DELETE /api/sessions/{id}`
 
 ## Game master
 

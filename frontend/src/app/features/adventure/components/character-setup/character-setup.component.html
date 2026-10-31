@@ -1,19 +1,35 @@
 <form class="setup-panel" (ngSubmit)="submit()">
   <label>
     Name
-    <input name="name" type="text" maxlength="28" [(ngModel)]="model.name" />
+    <input name="name" type="text" maxlength="28" autocomplete="off" placeholder="Your character's name" [(ngModel)]="model.name" />
   </label>
   <label>
-    Concept
-    <input name="concept" type="text" maxlength="80" [(ngModel)]="model.concept" />
+    Character background
+    <input
+      name="concept"
+      type="text"
+      maxlength="80"
+      autocomplete="off"
+      placeholder="e.g. disgraced city guard with gambling debts"
+      [(ngModel)]="model.concept"
+    />
   </label>
   <label>
     Setting
-    <select name="setting" [(ngModel)]="model.setting">
+    <input
+      name="setting"
+      type="text"
+      maxlength="120"
+      autocomplete="off"
+      list="setting-suggestions"
+      placeholder="Pick a suggestion or describe any world"
+      [(ngModel)]="model.setting"
+    />
+    <datalist id="setting-suggestions">
       @for (setting of settings; track setting.id) {
-        <option [value]="setting.id">{{ setting.label }}</option>
+        <option [value]="setting.label"></option>
       }
-    </select>
+    </datalist>
   </label>
-  <button type="submit" [disabled]="busy || settings.length === 0">Create</button>
+  <button type="submit" [disabled]="busy || !complete">{{ busy ? 'Creating ...' : 'Create' }}</button>
 </form>

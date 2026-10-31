@@ -4,10 +4,8 @@
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <module name="gpt-dnd-adventure" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="de.lwlab.gptdnd.GptDndAdventureApplication" />
-    <!-- Trust the Windows certificate store, so TLS-inspecting antivirus (e.g. Kaspersky) does not break HTTPS calls. Windows only. -->
     <option name="VM_PARAMETERS" value="-Djavax.net.ssl.trustStoreType=Windows-ROOT" />
-    <!-- compose.yaml and application-local.properties are resolved relative to backend/. -->
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/backend" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

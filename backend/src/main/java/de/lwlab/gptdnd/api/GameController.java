@@ -4,6 +4,7 @@ import de.lwlab.gptdnd.service.GameService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +47,12 @@ public class GameController {
     @PostMapping("/sessions/{id}/actions")
     public GameSessionResponse act(@PathVariable String id, @Valid @RequestBody ActionRequest request) {
         return GameMapper.session(gameService.act(id, request));
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
+        gameService.delete(id);
     }
 
     @PatchMapping("/sessions/{id}/preferences")

@@ -9,7 +9,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import de.lwlab.gptdnd.domain.CharacterProfile;
 import de.lwlab.gptdnd.domain.GameSession;
-import de.lwlab.gptdnd.domain.GameSetting;
+import de.lwlab.gptdnd.service.rules.StartingGear;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ class OpenRouterStoryProviderTest {
     private MockRestServiceServer server;
     private OpenRouterStoryProvider provider;
     private final GameSession session = new GameSession("s1",
-            new CharacterProfile("Mara", "smuggler", GameSetting.DARK_FANTASY), Instant.now());
+            new CharacterProfile("Mara", "smuggler", "dark-fantasy"), Instant.now());
 
     @BeforeEach
     void setUp() {
@@ -56,7 +56,7 @@ class OpenRouterStoryProviderTest {
                 .andRespond(withSuccess(completion("{\\\"narration\\\": \\\"You arrive.\\\", \\\"location\\\": \\\"Mill\\\", "
                         + "\\\"suggestedActions\\\": [\\\"a\\\"], \\\"imagePrompt\\\": \\\"mill\\\"}"), MediaType.APPLICATION_JSON));
 
-        SceneIntro intro = provider.intro(session);
+        SceneIntro intro = provider.intro(session, StartingGear.of(10));
 
         assertThat(intro.location()).isEqualTo("Mill");
         server.verify();
@@ -67,7 +67,7 @@ class OpenRouterStoryProviderTest {
         server.expect(requestTo("https://openrouter.test/api/v1/chat/completions"))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
 
-        assertThatThrownBy(() -> provider.intro(session))
+        assertThatThrownBy(() -> provider.intro(session, StartingGear.of(10)))
                 .isInstanceOf(StoryProviderException.class)
                 .hasMessageContaining("rate limit");
     }

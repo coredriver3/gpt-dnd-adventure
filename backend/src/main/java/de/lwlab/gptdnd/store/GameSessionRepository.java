@@ -23,6 +23,10 @@ public class GameSessionRepository {
         return repository.findById(id).map(GameSessionEntity::toDomain);
     }
 
+    public void deleteById(String id) {
+        repository.deleteById(id);
+    }
+
     public Collection<GameSession> findAll() {
         return repository.findAll().stream().map(GameSessionEntity::toDomain).toList();
     }

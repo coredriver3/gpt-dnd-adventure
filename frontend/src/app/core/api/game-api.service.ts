@@ -24,6 +24,10 @@ export class GameApiService {
     return this.http.post<GameSession>(`${this.baseUrl}/sessions`, request);
   }
 
+  deleteSession(sessionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/sessions/${sessionId}`);
+  }
+
   sendAction(sessionId: string, text: string): Observable<GameSession> {
     return this.http.post<GameSession>(`${this.baseUrl}/sessions/${sessionId}/actions`, { text });
   }

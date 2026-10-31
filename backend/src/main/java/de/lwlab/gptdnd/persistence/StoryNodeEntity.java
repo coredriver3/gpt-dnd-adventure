@@ -1,6 +1,7 @@
 package de.lwlab.gptdnd.persistence;
 
 import de.lwlab.gptdnd.domain.Consequence;
+import de.lwlab.gptdnd.domain.DiceRoll;
 import de.lwlab.gptdnd.domain.StoryNode;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -35,6 +36,15 @@ public class StoryNodeEntity {
 
     private String rollText;
 
+    private String diceLabel;
+    private Integer diceNatural;
+    private Integer diceModifier;
+    private Integer diceDifficulty;
+    private String diceOutcome;
+
+    @Enumerated(EnumType.STRING)
+    private Consequence.Tone diceTone;
+
     @Column(length = 1000)
     private String imagePrompt;
 
@@ -60,6 +70,14 @@ public class StoryNodeEntity {
         this.action = node.action();
         this.text = node.text();
         this.rollText = node.rollText();
+        if (node.roll() != null) {
+            this.diceLabel = node.roll().label();
+            this.diceNatural = node.roll().natural();
+            this.diceModifier = node.roll().modifier();
+            this.diceDifficulty = node.roll().difficulty();
+            this.diceOutcome = node.roll().outcome();
+            this.diceTone = node.roll().tone();
+        }
         this.imagePrompt = node.imagePrompt();
         this.createdAt = node.createdAt();
         this.position = position;
@@ -78,6 +96,7 @@ public class StoryNodeEntity {
                 action,
                 text,
                 rollText,
+                diceNatural == null ? null : new DiceRoll(diceLabel, diceNatural, diceModifier, diceDifficulty, diceOutcome, diceTone),
                 imagePrompt,
                 consequences.stream().map(ConsequenceValue::toDomain).toList(),
                 createdAt);

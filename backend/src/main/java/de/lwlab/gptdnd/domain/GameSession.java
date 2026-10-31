@@ -32,9 +32,6 @@ public class GameSession {
         resources.put("coin", 12);
         resources.put("rations", 3);
         resources.put("torch", 2);
-        inventory.add("weathered map");
-        inventory.add("knife");
-        inventory.add("ink kit");
     }
 
     public String id() {

@@ -5,12 +5,14 @@ import de.lwlab.gptdnd.api.CreateSessionRequest;
 import de.lwlab.gptdnd.api.PreferenceRequest;
 import de.lwlab.gptdnd.domain.CharacterProfile;
 import de.lwlab.gptdnd.domain.Consequence;
+import de.lwlab.gptdnd.domain.DiceRoll;
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.GameSetting;
 import de.lwlab.gptdnd.domain.Language;
 import de.lwlab.gptdnd.domain.StoryNode;
 import de.lwlab.gptdnd.service.rules.Degree;
 import de.lwlab.gptdnd.service.rules.RollResult;
+import de.lwlab.gptdnd.service.rules.StartingGear;
 import de.lwlab.gptdnd.service.story.ActionPlan;
 import de.lwlab.gptdnd.service.story.SceneIntro;
 import de.lwlab.gptdnd.service.story.StoryProvider;
@@ -45,19 +47,23 @@ public class GameService {
     }
 
     public GameSession create(CreateSessionRequest request) {
-        GameSetting setting = GameSetting.fromId(request.setting());
-        CharacterProfile character = new CharacterProfile(clean(request.name(), "Mara"), clean(request.concept(), "traveller"), setting);
+        CharacterProfile character = new CharacterProfile(request.name().trim(), request.concept().trim(), request.setting().trim());
         GameSession session = new GameSession(UUID.randomUUID().toString(), character, Instant.now());
         if (request.language() != null) {
             session.language(Language.valueOf(request.language().toUpperCase()));
         }
-        SceneIntro intro = storyProvider.intro(session);
+        StartingGear gear = StartingGear.of(rollD20());
+        SceneIntro intro = storyProvider.intro(session, gear);
         session.location(text(intro.location(), 200));
         replaceSuggestions(session, intro.suggestedActions());
-        addNode(session, StoryNode.SCENE, null, intro.narration(), "no roll", intro.imagePrompt(), List.of(
-                new Consequence("inventory tracked", Consequence.Tone.NEUTRAL),
-                new Consequence("death enabled", Consequence.Tone.BAD),
-                new Consequence("contextual dice difficulty", Consequence.Tone.NEUTRAL)));
+        List<Consequence> consequences = new ArrayList<>();
+        for (String item : limit(intro.startingItems(), gear.itemCount())) {
+            session.inventory().add(text(item, 60));
+            consequences.add(new Consequence("gained " + text(item, 60), Consequence.Tone.GOOD));
+        }
+        DiceRoll roll = new DiceRoll("Starting gear", gear.natural(), 0, null, gear.outcome(), gear.tone());
+        addNode(session, StoryNode.SCENE, null, intro.narration(), "Starting gear: d20 %d / %s".formatted(gear.natural(), gear.outcome()),
+                roll, intro.imagePrompt(), consequences);
         return repository.save(session);
     }
 
@@ -66,6 +72,11 @@ public class GameService {
         return repository.findAll().stream()
                 .sorted(Comparator.comparing(GameSession::lastPlayedAt).reversed())
                 .toList();
+    }
+
+    public void delete(String id) {
+        get(id);
+        repository.deleteById(id);
     }
 
     public GameSession get(String id) {
@@ -87,7 +98,7 @@ public class GameService {
         GameSession session = get(id);
         String text = clean(request.text(), "");
         if (session.dead()) {
-            addNode(session, StoryNode.SYSTEM, text, "This character is dead. Start a new game.", "no roll", null,
+            addNode(session, StoryNode.SYSTEM, text, "This character is dead. Start a new game.", "no roll", null, null,
                     List.of(new Consequence("fatal state", Consequence.Tone.BAD)));
             return repository.save(session);
         }
@@ -111,20 +122,23 @@ public class GameService {
         if (plan.rollNeeded()) {
             int difficulty = clamp(plan.difficulty(), 5, 25);
             int modifier = clamp(plan.modifier(), -2, 3);
-            int natural = ThreadLocalRandom.current().nextInt(1, 21);
+            int natural = rollD20();
             roll = new RollResult(clean(plan.skill(), "Check"), natural, modifier, difficulty,
                     Degree.of(natural, natural + modifier, difficulty));
         }
         TurnOutcome outcome = storyProvider.resolve(session, text, plan, roll);
         Degree degree = roll == null ? Degree.NO_ROLL : roll.degree();
-        List<Consequence> consequences = apply(session, outcome, degree);
-        consequences.add(new Consequence(degree.label(), switch (degree) {
+        Consequence.Tone tone = switch (degree) {
             case SUCCESS, CRITICAL_SUCCESS -> Consequence.Tone.GOOD;
             case FAILURE, CRITICAL_FAILURE -> Consequence.Tone.BAD;
             default -> Consequence.Tone.NEUTRAL;
-        }));
+        };
+        DiceRoll dice = roll == null ? null
+                : new DiceRoll(roll.skill(), roll.natural(), roll.modifier(), roll.difficulty(), degree.label(), tone);
+        List<Consequence> consequences = apply(session, outcome, degree);
+        consequences.add(new Consequence(degree.label(), tone));
         addNode(session, StoryNode.STORY, text, outcome.narration(), roll == null ? "no roll" : roll.describe(),
-                outcome.imagePrompt(), consequences);
+                dice, outcome.imagePrompt(), consequences);
     }
 
     /** Applies the narrator's proposed changes, clamped to what the rolled degree allows. */
@@ -202,7 +216,7 @@ public class GameService {
     }
 
     private void reject(GameSession session, String text, String reason) {
-        addNode(session, StoryNode.REJECTED, text, reason, "no roll", null,
+        addNode(session, StoryNode.REJECTED, text, reason, "no roll", null, null,
                 List.of(new Consequence("story did not advance", Consequence.Tone.BAD)));
     }
 
@@ -216,10 +230,12 @@ public class GameService {
                 sides = clamp(Integer.parseInt(matcher.group(1)), 2, 100);
                 mod = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
             }
-            int total = ThreadLocalRandom.current().nextInt(1, sides + 1) + mod;
+            int natural = ThreadLocalRandom.current().nextInt(1, sides + 1);
+            int total = natural + mod;
+            DiceRoll dice = sides == 20 ? new DiceRoll("Manual roll", natural, mod, null, "", Consequence.Tone.NEUTRAL) : null;
             addNode(session, StoryNode.COMMAND, text, "Manual roll: d%s%s = %s. The story does not advance."
                             .formatted(sides, mod == 0 ? "" : signed(mod), total),
-                    String.valueOf(total), null, List.of(new Consequence("command mode", Consequence.Tone.NEUTRAL)));
+                    String.valueOf(total), dice, null, List.of(new Consequence("command mode", Consequence.Tone.NEUTRAL)));
             return;
         }
 
@@ -239,7 +255,7 @@ public class GameService {
             session.images(false);
         }
         addNode(session, StoryNode.COMMAND, text, reports.getOrDefault(command, "Unknown command. Try [help]. The story does not advance."),
-                "no roll", null, List.of(new Consequence("no story advance", Consequence.Tone.NEUTRAL)));
+                "no roll", null, null, List.of(new Consequence("no story advance", Consequence.Tone.NEUTRAL)));
     }
 
     private void replaceSuggestions(GameSession session, List<String> suggestions) {
@@ -247,10 +263,14 @@ public class GameService {
         limit(suggestions, 3).forEach(suggestion -> session.suggestedActions().add(text(suggestion, 200)));
     }
 
-    private void addNode(GameSession session, String type, String action, String text, String rollText, String imagePrompt,
+    private void addNode(GameSession session, String type, String action, String text, String rollText, DiceRoll roll, String imagePrompt,
             List<Consequence> consequences) {
-        session.nodes().add(new StoryNode(UUID.randomUUID().toString(), type, action, text(text, 5000), rollText,
+        session.nodes().add(new StoryNode(UUID.randomUUID().toString(), type, action, text(text, 5000), rollText, roll,
                 imagePrompt == null ? null : text(imagePrompt, 1000), consequences, Instant.now()));
+    }
+
+    private static int rollD20() {
+        return ThreadLocalRandom.current().nextInt(1, 21);
     }
 
     private static List<String> limit(List<String> values, int max) {

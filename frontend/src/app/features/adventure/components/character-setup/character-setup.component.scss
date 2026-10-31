@@ -15,8 +15,7 @@ label {
   font-size: 0.85rem;
 }
 
-input,
-select {
+input {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -41,7 +40,7 @@ button {
 
 button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: default;
 }
 
 @media (max-width: 1200px) {

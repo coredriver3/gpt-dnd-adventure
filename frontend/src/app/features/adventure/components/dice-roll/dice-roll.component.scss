@@ -1,0 +1,106 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 16px;
+  overflow: hidden;
+  background: rgba(10, 11, 8, 0.86);
+  cursor: pointer;
+}
+
+.label {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.target {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border: 1px solid rgba(227, 179, 65, 0.5);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 240px;
+  perspective: 800px;
+}
+
+.bouncer,
+.die {
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.face span {
+  position: absolute;
+  top: 66.7%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent);
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.face span.underlined {
+  text-decoration: underline;
+}
+
+.face.result {
+  background-color: var(--accent) !important;
+  transition: background-color 0.25s ease;
+}
+
+.face.result span {
+  color: #171204;
+}
+
+.result-text {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 76px;
+  text-align: center;
+}
+
+.result-text strong {
+  font-size: 2rem;
+}
+
+.outcome {
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.outcome.good {
+  color: #b6f09a;
+}
+
+.outcome.bad {
+  color: #ff9d94;
+}

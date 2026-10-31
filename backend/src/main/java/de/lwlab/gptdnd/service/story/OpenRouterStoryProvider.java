@@ -2,6 +2,7 @@ package de.lwlab.gptdnd.service.story;
 
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.service.rules.RollResult;
+import de.lwlab.gptdnd.service.rules.StartingGear;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -39,8 +40,8 @@ public class OpenRouterStoryProvider implements StoryProvider {
     }
 
     @Override
-    public SceneIntro intro(GameSession session) {
-        return call(session, SceneIntro.class, prompts.intro(session));
+    public SceneIntro intro(GameSession session, StartingGear gear) {
+        return call(session, SceneIntro.class, prompts.intro(session, gear));
     }
 
     @Override

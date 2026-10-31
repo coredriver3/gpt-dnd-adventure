@@ -2,25 +2,34 @@ package de.lwlab.gptdnd.service.story;
 
 import de.lwlab.gptdnd.domain.CharacterProfile;
 import de.lwlab.gptdnd.domain.GameSession;
+import de.lwlab.gptdnd.domain.GameSetting;
 import de.lwlab.gptdnd.domain.Language;
 import de.lwlab.gptdnd.service.rules.Degree;
 import de.lwlab.gptdnd.service.rules.RollResult;
+import de.lwlab.gptdnd.service.rules.StartingGear;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Deterministic, offline narrator used when no Claude API key is configured. */
 public class LocalStoryProvider implements StoryProvider {
+    private static final List<String> STARTING_ITEMS = List.of("weathered map", "knife", "ink kit", "rope", "flint and steel", "waterskin");
+    private static final List<String> GENERIC_PLACES = List.of("a crossroads at dusk", "an abandoned waystation", "a narrow pass in the rain", "a half-empty market square");
+
     @Override
-    public SceneIntro intro(GameSession session) {
+    public SceneIntro intro(GameSession session, StartingGear gear) {
         CharacterProfile character = session.character();
-        String place = random(character.setting().places());
+        String place = random(places(character.setting()));
         String text = session.language() == Language.DE
                 ? "%s, %s, erreicht %s. Die Luft schmeckt nach Regen und Metall. Deine Vorräte sind knapp, und jede falsche Entscheidung kann bleibende Folgen haben."
                         .formatted(character.name(), character.concept(), place)
                 : "%s, %s, reaches %s. The air tastes of rain and metal. Supplies are thin, and bad decisions can leave permanent scars."
                         .formatted(character.name(), character.concept(), place);
-        return new SceneIntro(text, place, suggestions(session.language()),
-                "%s, %s, cinematic adventure concept art".formatted(character.setting().id(), place));
+        List<String> items = new ArrayList<>(STARTING_ITEMS);
+        Collections.shuffle(items);
+        return new SceneIntro(text, place, items.subList(0, gear.itemCount()), suggestions(session.language()),
+                "%s, %s, cinematic adventure concept art".formatted(character.setting(), place));
     }
 
     @Override
@@ -40,7 +49,7 @@ public class LocalStoryProvider implements StoryProvider {
     public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll) {
         Degree degree = roll == null ? Degree.NO_ROLL : roll.degree();
         Language language = session.language();
-        String place = random(session.character().setting().places());
+        String place = random(places(session.character().setting()));
         String text = language == Language.DE
                 ? "Du willst: \"%s\". In %s kippt die Lage in Richtung %s. %s".formatted(action, place, degree.label(), describe(degree, language))
                 : "You attempt: \"%s\". At %s, the situation turns into a %s. %s".formatted(action, place, degree.label(), describe(degree, language));
@@ -63,7 +72,11 @@ public class LocalStoryProvider implements StoryProvider {
         int rations = badRoll && chance(65) && session.resources().getOrDefault("rations", 0) > 0 ? -1 : 0;
         return new TurnOutcome(text, place, health, resolve, gained, List.of(), 0, rations, 0, List.of(), List.of(), false,
                 suggestions(language), "%s, %s, player action: %s, %s, cinematic fantasy"
-                        .formatted(session.character().setting().id(), place, action, degree.label()));
+                        .formatted(session.character().setting(), place, action, degree.label()));
+    }
+
+    private List<String> places(String setting) {
+        return GameSetting.find(setting).map(GameSetting::places).orElse(GENERIC_PLACES);
     }
 
     private String describe(Degree degree, Language language) {

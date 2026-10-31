@@ -16,12 +16,22 @@ export interface Consequence {
   tone: ConsequenceTone;
 }
 
+export interface DiceRoll {
+  label: string;
+  natural: number;
+  modifier: number;
+  difficulty: number | null;
+  outcome: string;
+  tone: ConsequenceTone;
+}
+
 export interface StoryNode {
   id: string;
   type: string;
   action: string | null;
   text: string;
   rollText: string;
+  roll: DiceRoll | null;
   imagePrompt: string | null;
   consequences: Consequence[];
   createdAt: string;

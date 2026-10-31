@@ -2,7 +2,6 @@ package de.lwlab.gptdnd.persistence;
 
 import de.lwlab.gptdnd.domain.CharacterProfile;
 import de.lwlab.gptdnd.domain.GameSession;
-import de.lwlab.gptdnd.domain.GameSetting;
 import de.lwlab.gptdnd.domain.Language;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -90,7 +89,7 @@ public class GameSessionEntity {
         entity.id = session.id();
         entity.characterName = session.character().name();
         entity.characterConcept = session.character().concept();
-        entity.settingId = session.character().setting().id();
+        entity.settingId = session.character().setting();
         entity.createdAt = session.createdAt();
         entity.language = session.language();
         entity.images = session.images();
@@ -114,7 +113,7 @@ public class GameSessionEntity {
     public GameSession toDomain() {
         GameSession session = new GameSession(
                 id,
-                new CharacterProfile(characterName, characterConcept, GameSetting.fromId(settingId)),
+                new CharacterProfile(characterName, characterConcept, settingId),
                 createdAt);
         session.language(language);
         session.images(images);

@@ -1,17 +1,20 @@
 package de.lwlab.gptdnd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.lwlab.gptdnd.api.ActionRequest;
 import de.lwlab.gptdnd.api.CreateSessionRequest;
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.StoryNode;
 import de.lwlab.gptdnd.service.rules.RollResult;
+import de.lwlab.gptdnd.service.rules.StartingGear;
 import de.lwlab.gptdnd.service.story.ActionPlan;
 import de.lwlab.gptdnd.service.story.SceneIntro;
 import de.lwlab.gptdnd.service.story.StoryProvider;
 import de.lwlab.gptdnd.service.story.TurnOutcome;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +47,31 @@ class GameServiceTest {
     }
 
     @Test
+    void startingItemsAreLimitedByTheRoll() {
+        GameSession session = create();
+
+        StoryNode intro = session.nodes().getFirst();
+        assertThat(intro.roll()).isNotNull();
+        assertThat(session.inventory()).hasSize(StartingGear.of(intro.roll().natural()).itemCount());
+    }
+
+    @Test
+    void acceptsFreeTextSettings() {
+        GameSession session = gameService.create(new CreateSessionRequest("Vex", "ex-pilot", "Rusty space station", "en"));
+
+        assertThat(gameService.get(session.id()).character().setting()).isEqualTo("Rusty space station");
+    }
+
+    @Test
+    void deletesSessionsWithTheirStory() {
+        GameSession session = create();
+
+        gameService.delete(session.id());
+
+        assertThatThrownBy(() -> gameService.get(session.id())).isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
     void clampsProposedChangesToWhatTheDegreeAllows() {
         GameSession session = create();
         provider.outcome = outcome(-10, true, List.of("knife", "dragon egg"), List.of("rope", "lamp", "crown"), -50);
@@ -53,7 +81,7 @@ class GameServiceTest {
         assertThat(after.health()).isEqualTo(9);
         assertThat(after.dead()).isFalse();
         assertThat(after.resources()).containsEntry("coin", 2);
-        assertThat(after.inventory()).doesNotContain("knife").contains("rope", "lamp").doesNotContain("crown");
+        assertThat(after.inventory()).contains("lamp").doesNotContain("crown");
         assertThat(after.turn()).isEqualTo(1);
         StoryNode node = after.nodes().getLast();
         assertThat(node.action()).isEqualTo("I walk to the door");
@@ -131,8 +159,8 @@ class GameServiceTest {
         RollResult lastRoll;
 
         @Override
-        public SceneIntro intro(GameSession session) {
-            return new SceneIntro("You arrive.", "Old mill", List.of("a", "b", "c"), "image");
+        public SceneIntro intro(GameSession session, StartingGear gear) {
+            return new SceneIntro("You arrive.", "Old mill", List.of("knife", "map", "ink", "rope", "extra"), List.of("a", "b", "c"), "image");
         }
 
         @Override

@@ -34,6 +34,7 @@
             [activeId]="session()?.id ?? null"
             [loading]="sessionsLoading()"
             (openSession)="openSession($event)"
+            (deleteSession)="deleteSession($event)"
             (newGame)="newGame()"
             (closeList)="view.set('play')"
           />
@@ -63,4 +64,8 @@
       <app-session-dock [session]="session()" />
     </aside>
   </div>
+
+  @if (dice(); as roll) {
+    <app-dice-roll [roll]="roll" (finished)="finishDice()" />
+  }
 </div>

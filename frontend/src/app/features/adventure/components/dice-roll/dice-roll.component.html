@@ -1,0 +1,40 @@
+<div class="overlay" role="dialog" aria-modal="true" [attr.aria-label]="'Dice roll: ' + roll.label">
+  <p class="label">
+    {{ roll.label }}
+    @if (roll.difficulty !== null) {
+      <span class="target">DC {{ roll.difficulty }}</span>
+    }
+  </p>
+
+  <div class="stage" aria-hidden="true">
+    <div class="bouncer" #bouncer>
+      <div class="die" #die>
+        @for (face of faces; track face.value) {
+          <div
+            class="face"
+            [class.result]="landed() && face.value === roll.natural"
+            [style.width.px]="faceWidth"
+            [style.height.px]="faceHeight"
+            [style.transform]="face.transform"
+          >
+            <span [class.underlined]="face.value === 6 || face.value === 9">{{ face.value }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="result-text" aria-live="polite">
+    @if (landed()) {
+      <strong>
+        {{ roll.natural }}
+        @if (roll.modifier !== 0) {
+          {{ signedModifier }} = {{ total }}
+        }
+      </strong>
+      @if (roll.outcome) {
+        <span class="outcome" [class.good]="roll.tone === 'good'" [class.bad]="roll.tone === 'bad'">{{ roll.outcome }}</span>
+      }
+    }
+  </div>
+</div>

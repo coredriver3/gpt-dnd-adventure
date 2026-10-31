@@ -14,16 +14,23 @@ export class CharacterSetupComponent {
   @Output() createSession = new EventEmitter<CreateSessionRequest>();
 
   protected model: CreateSessionRequest = {
-    name: 'Mara',
-    concept: 'runaway cartographer',
-    setting: 'dark-fantasy',
+    name: '',
+    concept: '',
+    setting: '',
   };
 
+  protected get complete(): boolean {
+    return !!(this.model.name.trim() && this.model.concept.trim() && this.model.setting.trim());
+  }
+
   submit(): void {
+    if (this.busy || !this.complete) {
+      return;
+    }
     this.createSession.emit({
-      name: this.model.name.trim() || 'Mara',
-      concept: this.model.concept.trim() || 'traveller',
-      setting: this.model.setting,
+      name: this.model.name.trim(),
+      concept: this.model.concept.trim(),
+      setting: this.model.setting.trim(),
     });
   }
 }

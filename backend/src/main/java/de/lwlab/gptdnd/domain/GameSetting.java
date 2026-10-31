@@ -1,6 +1,8 @@
 package de.lwlab.gptdnd.domain;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public enum GameSetting {
     DARK_FANTASY(
@@ -58,12 +60,14 @@ public enum GameSetting {
         return places;
     }
 
-    public static GameSetting fromId(String id) {
-        for (GameSetting setting : values()) {
-            if (setting.id.equals(id)) {
-                return setting;
-            }
-        }
-        throw new IllegalArgumentException("Unknown setting: " + id);
+    /** Finds the preset a stored setting refers to, by id or label. Free-text settings have none. */
+    public static Optional<GameSetting> find(String value) {
+        return Arrays.stream(values())
+                .filter(setting -> setting.id.equalsIgnoreCase(value) || setting.label.equalsIgnoreCase(value))
+                .findFirst();
+    }
+
+    public static String label(String value) {
+        return find(value).map(GameSetting::label).orElse(value);
     }
 }

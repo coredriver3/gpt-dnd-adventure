@@ -18,7 +18,7 @@
 
   <ul class="cards">
     @for (session of sessions; track session.id) {
-      <li>
+      <li class="card-wrap">
         <button
           type="button"
           class="card"
@@ -42,6 +42,15 @@
           <span class="health" aria-hidden="true"><i [style.--value.%]="percent(session.health, session.maxHealth)"></i></span>
           <span class="meta">Turn {{ session.turn }} · {{ session.lastPlayedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
         </button>
+        <div class="card-delete">
+          @if (confirmingId() === session.id) {
+            <span>Delete forever?</span>
+            <button type="button" class="danger" (click)="deleteSession.emit(session.id); confirmingId.set(null)">Delete</button>
+            <button type="button" (click)="confirmingId.set(null)">Keep</button>
+          } @else {
+            <button type="button" [attr.aria-label]="'Delete game of ' + session.name" (click)="confirmingId.set(session.id)">Delete</button>
+          }
+        </div>
       </li>
     }
   </ul>

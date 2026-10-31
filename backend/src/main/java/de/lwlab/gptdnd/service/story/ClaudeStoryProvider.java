@@ -12,6 +12,7 @@ import com.anthropic.models.messages.StructuredMessage;
 import com.anthropic.models.messages.StructuredMessageCreateParams;
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.service.rules.RollResult;
+import de.lwlab.gptdnd.service.rules.StartingGear;
 
 /**
  * Game master backed by the Claude API. The backend stays the rules authority: Claude judges actions
@@ -35,8 +36,8 @@ public class ClaudeStoryProvider implements StoryProvider {
     }
 
     @Override
-    public SceneIntro intro(GameSession session) {
-        return call(session, SceneIntro.class, introConfig, prompts.intro(session));
+    public SceneIntro intro(GameSession session, StartingGear gear) {
+        return call(session, SceneIntro.class, introConfig, prompts.intro(session, gear));
     }
 
     @Override
