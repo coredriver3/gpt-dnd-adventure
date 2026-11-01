@@ -19,6 +19,13 @@
       </div>
     }
 
+    @if (s.layout) {
+      <div>
+        <h2>{{ i18n.t('dock.here') }}</h2>
+        <p class="goal">{{ s.layout }}</p>
+      </div>
+    }
+
     <div class="meters">
       <div class="meter danger">
         <div class="meter-head">
@@ -27,27 +34,13 @@
         </div>
         <div class="meter-track"><i [style.--value.%]="percent(s.health, s.maxHealth)"></i></div>
       </div>
-
-      <div class="meter">
-        <div class="meter-head">
-          <span>{{ i18n.t('dock.resolve') }}</span>
-          <strong>{{ s.resolve }} / {{ s.maxResolve }}</strong>
-        </div>
-        <div class="meter-track"><i [style.--value.%]="percent(s.resolve, s.maxResolve)"></i></div>
-      </div>
-    </div>
-
-    <div>
-      <h2>{{ i18n.t('dock.resources') }}</h2>
-      <ul class="compact-list">
-        @for (resource of s.resources | keyvalue; track resource.key) {
-          <li><span>{{ i18n.resource(resource.key) }}</span><strong>{{ resource.value }}</strong></li>
-        }
-      </ul>
     </div>
 
     <div>
       <h2>{{ i18n.t('dock.inventory') }}</h2>
+      <ul class="compact-list">
+        <li><span>{{ i18n.t('dock.coins') }}</span><strong>{{ s.resources['coin'] }}</strong></li>
+      </ul>
       @if (s.inventory.length) {
         <ul class="tag-list">
           @for (item of s.inventory; track item) {

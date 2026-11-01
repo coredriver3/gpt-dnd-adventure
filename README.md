@@ -63,8 +63,12 @@ Claude (`ClaudeStoryProvider`) runs the game as narrator. Each action is resolve
 
 The story director (`StoryDirector`) keeps the pacing varied: it picks the kind of moment each turn delivers,
 advances a hidden threat clock that forces the threat to act, requires a named person by turn 3 and new
-surroundings every 5 turns, and limits how often coins can be found. Goal, threat, people and open threads are
-stored per game and sent along with every turn.
+surroundings every 5 turns, and limits how often coins can be found. Goal, threat, layout, people and open threads
+are stored per game and sent along with every turn. The layout (size of the place, exits, where everyone stands) is
+shown in the sidebar and keeps the narration spatially consistent.
+
+A character has health, coins and an inventory. A fatal turn is rewritten by one extra request so that the text tells
+the death, and a "success with cost" without a cost from the model costs 1 health.
 
 The backend stays the rules authority: it rolls the dice and clamps every proposed change to what the
 rolled degree allows, so the model cannot hand out free wins or kill a character after a success.

@@ -28,11 +28,6 @@ export class I18nService {
   server(text: string): string {
     return translateServerText(text, this.language());
   }
-
-  resource(name: string): string {
-    const key = `resource.${name}` as TranslationKey;
-    return TRANSLATIONS[this.language()][key] ?? name;
-  }
 }
 
 function initialLanguage(): Language {

@@ -16,11 +16,10 @@ public class GameSession {
     private int turn = 0;
     private int health = 10;
     private int maxHealth = 10;
-    private int resolve = 6;
-    private int maxResolve = 6;
     private String location = "";
     private String goal = "";
     private String threat = "";
+    private String layout = "";
     private int threatClock = 0;
     private final Map<String, Integer> resources = new LinkedHashMap<>();
     private final List<String> inventory = new ArrayList<>();
@@ -36,8 +35,6 @@ public class GameSession {
         this.character = character;
         this.createdAt = createdAt;
         resources.put("coin", 12);
-        resources.put("rations", 3);
-        resources.put("torch", 2);
     }
 
     public String id() {
@@ -96,18 +93,6 @@ public class GameSession {
         return maxHealth;
     }
 
-    public int resolve() {
-        return resolve;
-    }
-
-    public void resolve(int resolve) {
-        this.resolve = Math.max(0, Math.min(maxResolve, resolve));
-    }
-
-    public int maxResolve() {
-        return maxResolve;
-    }
-
     public Map<String, Integer> resources() {
         return resources;
     }
@@ -150,6 +135,14 @@ public class GameSession {
 
     public void threat(String threat) {
         this.threat = threat == null ? "" : threat;
+    }
+
+    public String layout() {
+        return layout;
+    }
+
+    public void layout(String layout) {
+        this.layout = layout == null ? "" : layout;
     }
 
     public int threatClock() {

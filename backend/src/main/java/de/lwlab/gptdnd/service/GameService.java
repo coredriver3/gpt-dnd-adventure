@@ -18,6 +18,7 @@ import de.lwlab.gptdnd.service.rules.StoryDirector;
 import de.lwlab.gptdnd.service.story.ActionPlan;
 import de.lwlab.gptdnd.service.story.SceneIntro;
 import de.lwlab.gptdnd.service.story.StoryProvider;
+import de.lwlab.gptdnd.service.story.StoryProviderException;
 import de.lwlab.gptdnd.service.story.TurnOutcome;
 import de.lwlab.gptdnd.store.GameSessionRepository;
 import java.time.Instant;
@@ -43,7 +44,7 @@ public class GameService {
     private static final Pattern VALID_CHARACTER = Pattern.compile("\\p{Lu}[^\\n/]{2,200}");
     private static final Pattern VALID_THREAD = Pattern.compile("\\p{L}[^\\n/]{9,200}");
     private static final Pattern TECHNICAL_TEXT = Pattern.compile(
-            "\\b(healthDelta|resolveDelta|coinDelta|rationsDelta|torchDelta|characterDied|itemsLost|itemsGained|effectsAdded"
+            "\\b(healthDelta|coinDelta|characterDied|itemsLost|itemsGained|effectsAdded"
                     + "|effectsRemoved|suggestedActions|imagePrompt|openThreads)\\b");
 
     private final GameSessionRepository repository;
@@ -67,7 +68,7 @@ public class GameService {
         StartingGear gear = StartingGear.of(rollD20());
         SceneIntro intro = storyProvider.intro(session, gear);
         session.location(text(intro.location(), 200));
-        updateStoryState(session, intro.goal(), intro.threat(), intro.characters(), intro.openThreads());
+        updateStoryState(session, intro.goal(), intro.threat(), intro.layout(), intro.characters(), intro.openThreads());
         replaceSuggestions(session, intro.suggestedActions());
         List<Consequence> consequences = new ArrayList<>();
         for (String item : limit(intro.startingItems(), gear.itemCount())) {
@@ -154,8 +155,19 @@ public class GameService {
                 : new DiceRoll(roll.skill(), roll.natural(), roll.modifier(), roll.difficulty(), degree.label(), tone);
         List<Consequence> consequences = apply(session, outcome, degree, direction);
         consequences.add(new Consequence(degree.label(), tone));
-        addNode(session, StoryNode.STORY, text, cleanNarration(outcome.narration()), roll == null ? "no roll" : roll.describe(),
+        String narration = cleanNarration(outcome.narration());
+        addNode(session, StoryNode.STORY, text, session.dead() ? deathScene(session, text, narration) : narration, roll == null ? "no roll" : roll.describe(),
                 dice, outcome.imagePrompt(), consequences);
+    }
+
+    /** If this extra request fails, the turn still counts and keeps its original text. */
+    private String deathScene(GameSession session, String action, String narration) {
+        try {
+            String scene = cleanNarration(storyProvider.death(session, action, narration).narration());
+            return scene.isBlank() ? narration : scene;
+        } catch (StoryProviderException exception) {
+            return narration;
+        }
     }
 
     /** Models sometimes spill structured fields or stray markup into the prose; that never reaches the player. */
@@ -179,12 +191,15 @@ public class GameService {
         }
     }
 
-    private void updateStoryState(GameSession session, String goal, String threat, List<String> characters, List<String> openThreads) {
+    private void updateStoryState(GameSession session, String goal, String threat, String layout, List<String> characters, List<String> openThreads) {
         if (goal != null && !goal.isBlank()) {
             session.goal(text(goal, 500));
         }
         if (threat != null && !threat.isBlank()) {
             session.threat(text(threat, 500));
+        }
+        if (layout != null && !layout.isBlank()) {
+            session.layout(text(layout, 1000));
         }
         replaceStoryList(session.characters(), characters, MAX_CHARACTERS, VALID_CHARACTER);
         replaceStoryList(session.openThreads(), openThreads, MAX_THREADS, VALID_THREAD);
@@ -198,7 +213,7 @@ public class GameService {
             session.location(text(outcome.location(), 200));
         }
         replaceSuggestions(session, outcome.suggestedActions());
-        updateStoryState(session, outcome.goal(), outcome.threat(), outcome.characters(), outcome.openThreads());
+        updateStoryState(session, outcome.goal(), outcome.threat(), outcome.layout(), outcome.characters(), outcome.openThreads());
         session.threatClock(direction.threatClock());
         session.recentBeats().add(direction.beat());
         if (session.recentBeats().size() > BEAT_MEMORY) {
@@ -206,19 +221,12 @@ public class GameService {
         }
 
         int health = degree.clampHealth(outcome.healthDelta(), direction.threatStrikes());
-        int resolve = degree.clampResolve(outcome.resolveDelta());
         session.health(session.health() + health);
-        session.resolve(session.resolve() + resolve);
         if (health != 0) {
             consequences.add(new Consequence(signed(health) + " health", health > 0 ? Consequence.Tone.GOOD : Consequence.Tone.BAD));
         }
-        if (resolve != 0) {
-            consequences.add(new Consequence(signed(resolve) + " resolve", resolve > 0 ? Consequence.Tone.GOOD : Consequence.Tone.BAD));
-        }
 
         changeResource(session, "coin", clamp(outcome.coinDelta(), Integer.MIN_VALUE, direction.coinsAllowed() ? MAX_COINS_FOUND : 0), consequences);
-        changeResource(session, "rations", clamp(outcome.rationsDelta(), -2, 2), consequences);
-        changeResource(session, "torch", clamp(outcome.torchDelta(), -2, 2), consequences);
 
         for (String item : limit(outcome.itemsLost(), 3)) {
             session.inventory().stream()
@@ -247,6 +255,12 @@ public class GameService {
                 session.effects().add(value);
                 consequences.add(new Consequence(value, Consequence.Tone.BAD));
             }
+        }
+
+        // A cost the model forgot never kills on its own.
+        if (degree.requiresCost() && session.health() > 1 && consequences.stream().noneMatch(c -> c.tone() == Consequence.Tone.BAD)) {
+            session.health(session.health() - 1);
+            consequences.add(new Consequence("-1 health", Consequence.Tone.BAD));
         }
 
         if (outcome.characterDied() && degree.allowsDeath()) {
@@ -279,8 +293,8 @@ public class GameService {
         String command = text.substring(1, text.length() - 1).trim().toLowerCase();
         Map<String, String> reports = Map.of(
                 "inventory", "Inventory: " + String.join(", ", session.inventory()) + ".",
-                "status", "Health %s/%s, Resolve %s/%s. Location: %s. Effects: %s.".formatted(
-                        session.health(), session.maxHealth(), session.resolve(), session.maxResolve(),
+                "status", "Health %s/%s. Location: %s. Effects: %s.".formatted(
+                        session.health(), session.maxHealth(),
                         session.location().isBlank() ? "unknown" : session.location(),
                         session.effects().isEmpty() ? "none" : String.join(", ", session.effects())),
                 "help", "Commands: [inventory], [status], [image on], [image off].",

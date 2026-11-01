@@ -37,7 +37,8 @@ public class OpenRouterStoryProvider implements StoryProvider {
         this.schemas = Map.of(
                 SceneIntro.class, MAPPER.readTree(JsonSchemas.json(SceneIntro.class)),
                 ActionPlan.class, MAPPER.readTree(JsonSchemas.json(ActionPlan.class)),
-                TurnOutcome.class, MAPPER.readTree(JsonSchemas.json(TurnOutcome.class)));
+                TurnOutcome.class, MAPPER.readTree(JsonSchemas.json(TurnOutcome.class)),
+                DeathScene.class, MAPPER.readTree(JsonSchemas.json(DeathScene.class)));
     }
 
     @Override
@@ -53,6 +54,11 @@ public class OpenRouterStoryProvider implements StoryProvider {
     @Override
     public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll, Direction direction) {
         return call(session, TurnOutcome.class, prompts.resolve(session, action, plan, roll, direction));
+    }
+
+    @Override
+    public DeathScene death(GameSession session, String action, String narration) {
+        return call(session, DeathScene.class, prompts.death(session, action, narration));
     }
 
     private <T> T call(GameSession session, Class<T> type, String prompt) {

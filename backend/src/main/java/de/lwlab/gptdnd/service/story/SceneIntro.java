@@ -21,5 +21,7 @@ public record SceneIntro(
         @JsonPropertyDescription("named people introduced so far, each as: name, who they are, what they want from the character")
         List<String> characters,
         @JsonPropertyDescription("unanswered story questions the player could pursue, at most four")
-        List<String> openThreads) {
+        List<String> openThreads,
+        @JsonPropertyDescription("what the character can perceive of this place right now, two to four short sentences: its size, every exit with its state and where it leads, and where each person present stands. Settle this before writing the narration; no secrets")
+        String layout) {
 }

@@ -50,8 +50,6 @@ public class GameSessionEntity {
     private int turnCount;
     private int health;
     private int maxHealth;
-    private int resolve;
-    private int maxResolve;
 
     @Column(length = 200)
     private String location;
@@ -61,6 +59,9 @@ public class GameSessionEntity {
 
     @Column(length = 500)
     private String storyThreat;
+
+    @Column(length = 1000)
+    private String storyLayout;
 
     // Nullable: games from before the story state existed have no value yet.
     private Integer threatClock;
@@ -123,8 +124,6 @@ public class GameSessionEntity {
         entity.turnCount = session.turn();
         entity.health = session.health();
         entity.maxHealth = session.maxHealth();
-        entity.resolve = session.resolve();
-        entity.maxResolve = session.maxResolve();
         entity.resources = new LinkedHashMap<>(session.resources());
         entity.inventory = new ArrayList<>(session.inventory());
         entity.effects = new ArrayList<>(session.effects());
@@ -132,6 +131,7 @@ public class GameSessionEntity {
         entity.suggestedActions = new ArrayList<>(session.suggestedActions());
         entity.storyGoal = session.goal();
         entity.storyThreat = session.threat();
+        entity.storyLayout = session.layout();
         entity.threatClock = session.threatClock();
         entity.recentBeats = session.recentBeats().stream().map(Beat::name).collect(Collectors.joining(","));
         entity.storyCharacters = new ArrayList<>(session.characters());
@@ -154,9 +154,8 @@ public class GameSessionEntity {
             session.incrementTurn();
         }
         session.health(health);
-        session.resolve(resolve);
-        session.resources().clear();
-        session.resources().putAll(resources);
+        // Older games also stored rations and torches; only coins still exist.
+        session.resources().put("coin", resources.getOrDefault("coin", 0));
         session.inventory().clear();
         session.inventory().addAll(inventory);
         session.effects().clear();
@@ -165,6 +164,7 @@ public class GameSessionEntity {
         session.suggestedActions().addAll(suggestedActions);
         session.goal(storyGoal);
         session.threat(storyThreat);
+        session.layout(storyLayout);
         session.threatClock(threatClock == null ? 0 : threatClock);
         if (recentBeats != null && !recentBeats.isBlank()) {
             Arrays.stream(recentBeats.split(",")).map(Beat::valueOf).forEach(session.recentBeats()::add);

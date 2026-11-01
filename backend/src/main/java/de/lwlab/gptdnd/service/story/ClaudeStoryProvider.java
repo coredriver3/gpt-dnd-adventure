@@ -26,6 +26,7 @@ public class ClaudeStoryProvider implements StoryProvider {
     private final OutputConfig introConfig;
     private final OutputConfig planConfig;
     private final OutputConfig turnConfig;
+    private final OutputConfig deathConfig;
 
     public ClaudeStoryProvider(AnthropicClient client, String model, GameMasterPrompts prompts) {
         this.client = client;
@@ -34,6 +35,7 @@ public class ClaudeStoryProvider implements StoryProvider {
         this.introConfig = outputConfig(SceneIntro.class, OutputConfig.Effort.MEDIUM);
         this.planConfig = outputConfig(ActionPlan.class, OutputConfig.Effort.LOW);
         this.turnConfig = outputConfig(TurnOutcome.class, OutputConfig.Effort.MEDIUM);
+        this.deathConfig = outputConfig(DeathScene.class, OutputConfig.Effort.MEDIUM);
     }
 
     @Override
@@ -49,6 +51,11 @@ public class ClaudeStoryProvider implements StoryProvider {
     @Override
     public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll, Direction direction) {
         return call(session, TurnOutcome.class, turnConfig, prompts.resolve(session, action, plan, roll, direction));
+    }
+
+    @Override
+    public DeathScene death(GameSession session, String action, String narration) {
+        return call(session, DeathScene.class, deathConfig, prompts.death(session, action, narration));
     }
 
     private <T> T call(GameSession session, Class<T> type, OutputConfig config, String prompt) {

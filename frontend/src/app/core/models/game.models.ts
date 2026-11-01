@@ -46,10 +46,9 @@ export interface GameSession {
   turn: number;
   health: number;
   maxHealth: number;
-  resolve: number;
-  maxResolve: number;
   location: string;
   goal: string;
+  layout: string;
   people: string[];
   resources: Record<string, number>;
   inventory: string[];

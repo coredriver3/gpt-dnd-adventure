@@ -1,11 +1,9 @@
-import { KeyValuePipe } from '@angular/common';
 import { Component, Input, inject } from '@angular/core';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { GameSession } from '../../../../core/models/game.models';
 
 @Component({
   selector: 'app-session-dock',
-  imports: [KeyValuePipe],
   templateUrl: './session-dock.component.html',
   styleUrl: './session-dock.component.scss',
 })

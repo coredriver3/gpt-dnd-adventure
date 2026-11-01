@@ -9,15 +9,12 @@ public record TurnOutcome(
         @JsonPropertyDescription("short name of the location after this turn")
         String location,
         int healthDelta,
-        int resolveDelta,
         @JsonPropertyDescription("items newly obtained in this turn's narration, at most two")
         List<String> itemsGained,
         @JsonPropertyDescription("items from the current inventory that are lost, used up or broken in this turn's narration")
         List<String> itemsLost,
         @JsonPropertyDescription("coins newly found or spent in this turn's narration; 0 if none, never count coins again that were found earlier")
         int coinDelta,
-        int rationsDelta,
-        int torchDelta,
         @JsonPropertyDescription("new lasting conditions, e.g. bleeding, hunted by the watch")
         List<String> effectsAdded,
         @JsonPropertyDescription("existing effects that end this turn")
@@ -34,5 +31,7 @@ public record TurnOutcome(
         @JsonPropertyDescription("all named people so far, each as: name, who they are, how they stand toward the character")
         List<String> characters,
         @JsonPropertyDescription("unanswered story questions after this turn, at most four; drop what has been resolved")
-        List<String> openThreads) {
+        List<String> openThreads,
+        @JsonPropertyDescription("what the character can perceive of this place right now, two to four short sentences: its size, every exit with its state and where it leads, and where each person present stands. Settle this before writing the narration; no secrets")
+        String layout) {
 }

@@ -11,8 +11,10 @@ import de.lwlab.gptdnd.service.rules.Direction;
 import de.lwlab.gptdnd.service.rules.RollResult;
 import de.lwlab.gptdnd.service.rules.StartingGear;
 import de.lwlab.gptdnd.service.story.ActionPlan;
+import de.lwlab.gptdnd.service.story.DeathScene;
 import de.lwlab.gptdnd.service.story.SceneIntro;
 import de.lwlab.gptdnd.service.story.StoryProvider;
+import de.lwlab.gptdnd.service.story.StoryProviderException;
 import de.lwlab.gptdnd.service.story.TurnOutcome;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -36,6 +38,7 @@ class GameServiceTest {
     void reset() {
         provider.plan = plan(ActionPlan.Decision.AUTOMATIC_SUCCESS);
         provider.outcome = outcome(0, false, List.of(), List.of(), 0);
+        provider.deathFails = false;
     }
 
     @Test
@@ -117,8 +120,8 @@ class GameServiceTest {
     @Test
     void replacesDashesAndKeepsParagraphsInNarration() {
         GameSession session = create();
-        provider.outcome = new TurnOutcome("The door opens \u2014 slowly.\n\nA draft \u2013 cold - follows.", "Old mill", 0, 0,
-                List.of(), List.of(), 0, 0, 0, List.of(), List.of(), false, List.of(), "image", "g", "t", List.of(), List.of());
+        provider.outcome = new TurnOutcome("The door opens \u2014 slowly.\n\nA draft \u2013 cold - follows.", "Old mill", 0,
+                List.of(), List.of(), 0, List.of(), List.of(), false, List.of(), "image", "g", "t", List.of(), List.of(), "");
 
         GameSession after = gameService.act(session.id(), new ActionRequest("I open the door"));
 
@@ -146,8 +149,8 @@ class GameServiceTest {
         GameSession session = create();
         assertThat(session.goal()).isEqualTo("Reach the mill");
 
-        provider.outcome = new TurnOutcome("Ada steps out.", "Old mill", 0, 0, List.of(), List.of(), 0, 0, 0, List.of(), List.of(), false,
-                List.of(), "image", "Bargain with Ada", "", List.of("Ada, a scavenger"), List.of("Who sent her?"));
+        provider.outcome = new TurnOutcome("Ada steps out.", "Old mill", 0, List.of(), List.of(), 0, List.of(), List.of(), false,
+                List.of(), "image", "Bargain with Ada", "", List.of("Ada, a scavenger"), List.of("Who sent her?"), "A low mill with one door. Ada stands at it.");
         gameService.act(session.id(), new ActionRequest("I wait at the door"));
 
         GameSession stored = gameService.get(session.id());
@@ -155,6 +158,7 @@ class GameServiceTest {
         assertThat(stored.threat()).isEqualTo("The miller hunts you");
         assertThat(stored.characters()).containsExactly("Ada, a scavenger");
         assertThat(stored.openThreads()).containsExactly("Who sent her?");
+        assertThat(stored.layout()).isEqualTo("A low mill with one door. Ada stands at it.");
         assertThat(stored.threatClock()).isEqualTo(1);
         assertThat(stored.recentBeats()).hasSize(1);
     }
@@ -186,8 +190,8 @@ class GameServiceTest {
     @Test
     void rewritesTurnsWithTechnicalTextAndStripsItIfItPersists() {
         GameSession session = create();
-        provider.outcome = new TurnOutcome("You find a door.\n\nhealthDelta 0 // coinDelta 4", "Old mill", 0, 0, List.of(), List.of(), 0, 0, 0,
-                List.of(), List.of(), false, List.of(), "image", "g", "t", List.of(), List.of());
+        provider.outcome = new TurnOutcome("You find a door.\n\nhealthDelta 0 // coinDelta 4", "Old mill", 0, List.of(), List.of(), 0,
+                List.of(), List.of(), false, List.of(), "image", "g", "t", List.of(), List.of(), "");
         provider.resolveCalls = 0;
 
         GameSession after = gameService.act(session.id(), new ActionRequest("I look around"));
@@ -199,13 +203,13 @@ class GameServiceTest {
     @Test
     void keepsPeopleWhenTheModelDeliversGarbageAndCleansNarrationMarkup() {
         GameSession session = create();
-        provider.outcome = new TurnOutcome("Ada steps out.", "Old mill", 0, 0, List.of(), List.of(), 0, 0, 0, List.of(), List.of(), false,
-                List.of(), "image", "", "", List.of("Ada, a scavenger", ".", "the", "/stable-diffusion/xl/1.0"), List.of());
+        provider.outcome = new TurnOutcome("Ada steps out.", "Old mill", 0, List.of(), List.of(), 0, List.of(), List.of(), false,
+                List.of(), "image", "", "", List.of("Ada, a scavenger", ".", "the", "/stable-diffusion/xl/1.0"), List.of(), "");
         GameSession first = gameService.act(session.id(), new ActionRequest("I wait a moment"));
         assertThat(first.characters()).containsExactly("Ada, a scavenger");
 
-        provider.outcome = new TurnOutcome(">You wait.", "Old mill", 0, 0, List.of(), List.of(), 0, 0, 0, List.of(), List.of(), false,
-                List.of(), "image", "", "", List.of(".", ">You wait.\n\nMore narration"), List.of());
+        provider.outcome = new TurnOutcome(">You wait.", "Old mill", 0, List.of(), List.of(), 0, List.of(), List.of(), false,
+                List.of(), "image", "", "", List.of(".", ">You wait.\n\nMore narration"), List.of(), "");
         GameSession second = gameService.act(session.id(), new ActionRequest("I wait a moment"));
 
         assertThat(second.characters()).containsExactly("Ada, a scavenger");
@@ -220,6 +224,52 @@ class GameServiceTest {
         GameSession after = gameService.act(session.id(), new ActionRequest("I hand over my purse"));
 
         assertThat(after.resources()).containsEntry("coin", 0);
+    }
+
+    @Test
+    void onlyCoinsRemainAsResources() {
+        assertThat(create().resources()).containsOnlyKeys("coin");
+    }
+
+    @Test
+    void keepsTheLayoutWhenTheModelDeliversNone() {
+        GameSession session = create();
+
+        GameSession after = gameService.act(session.id(), new ActionRequest("I wait a moment"));
+
+        assertThat(after.layout()).isEqualTo("A mill by a river. Its door stands open.");
+    }
+
+    @Test
+    void fatalTurnsGetADeathScene() {
+        GameSession after = dieInARoll();
+
+        assertThat(after.dead()).isTrue();
+        assertThat(after.nodes().getLast().text()).isEqualTo("You fall and do not rise.");
+    }
+
+    @Test
+    void fatalTurnsKeepTheirTextIfTheDeathSceneFails() {
+        provider.deathFails = true;
+
+        GameSession after = dieInARoll();
+
+        assertThat(after.dead()).isTrue();
+        assertThat(after.nodes().getLast().text()).isEqualTo("Something happens.");
+    }
+
+    @Test
+    void successWithCostAlwaysCostsSomething() {
+        provider.plan = new ActionPlan(ActionPlan.Decision.ROLL, "", "Luck", 12, 0, "", "");
+        for (int attempt = 0; attempt < 200; attempt++) {
+            GameSession after = gameService.act(create().id(), new ActionRequest("I try my luck"));
+            if (after.nodes().getLast().roll().outcome().equals("success with cost")) {
+                assertThat(after.health()).isEqualTo(9);
+                assertThat(after.nodes().getLast().consequences()).extracting("text").contains("-1 health");
+                return;
+            }
+        }
+        throw new AssertionError("no success with cost in 200 rolls");
     }
 
     @Test
@@ -254,6 +304,18 @@ class GameServiceTest {
         assertThat(ids.indexOf(older.id())).isLessThan(ids.indexOf(newer.id()));
     }
 
+    /** Difficulty 25 can only fail, unless a natural 20 comes up; then the next turn tries again. */
+    private GameSession dieInARoll() {
+        GameSession session = create();
+        provider.plan = new ActionPlan(ActionPlan.Decision.ROLL, "", "Luck", 25, 0, "", "");
+        provider.outcome = outcome(0, true, List.of(), List.of(), 0);
+        GameSession after = session;
+        for (int attempt = 0; attempt < 20 && !after.dead(); attempt++) {
+            after = gameService.act(session.id(), new ActionRequest("I leap across the gap"));
+        }
+        return after;
+    }
+
     private static ActionPlan plan(ActionPlan.Decision decision) {
         return new ActionPlan(decision, "", "", 0, 0, "", "");
     }
@@ -263,8 +325,8 @@ class GameServiceTest {
     }
 
     private static TurnOutcome outcome(int health, boolean died, List<String> lost, List<String> gained, int coin) {
-        return new TurnOutcome("Something happens.", "Old mill", health, 0, gained, lost, coin, 0, 0,
-                List.of(), List.of(), died, List.of("x", "y", "z"), "image", "", "", List.of(), List.of());
+        return new TurnOutcome("Something happens.", "Old mill", health, gained, lost, coin,
+                List.of(), List.of(), died, List.of("x", "y", "z"), "image", "", "", List.of(), List.of(), "");
     }
 
     @TestConfiguration
@@ -281,11 +343,12 @@ class GameServiceTest {
         TurnOutcome outcome;
         RollResult lastRoll;
         int resolveCalls;
+        boolean deathFails;
 
         @Override
         public SceneIntro intro(GameSession session, StartingGear gear) {
             return new SceneIntro("You arrive.", "Old mill", List.of("knife", "map", "ink", "rope", "extra"), List.of("a", "b", "c"), "image",
-                    "Reach the mill", "The miller hunts you", List.of(), List.of());
+                    "Reach the mill", "The miller hunts you", List.of(), List.of(), "A mill by a river. Its door stands open.");
         }
 
         @Override
@@ -298,6 +361,14 @@ class GameServiceTest {
             lastRoll = roll;
             resolveCalls++;
             return outcome;
+        }
+
+        @Override
+        public DeathScene death(GameSession session, String action, String narration) {
+            if (deathFails) {
+                throw new StoryProviderException("The narrator could not be reached.", null);
+            }
+            return new DeathScene("You fall and do not rise.");
         }
     }
 }

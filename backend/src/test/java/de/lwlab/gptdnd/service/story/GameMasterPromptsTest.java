@@ -19,7 +19,7 @@ class GameMasterPromptsTest {
     @Test
     void introAsksForGearAndStoryStateInTheGameLanguage() {
         assertThat(prompts.intro(session, StartingGear.of(14)))
-                .contains("d20 rolled 14", "exactly 3 starting item(s)", "openThreads in German");
+                .contains("d20 rolled 14", "exactly 3 starting item(s)", "openThreads and layout in German");
     }
 
     @Test
@@ -37,6 +37,37 @@ class GameMasterPromptsTest {
         assertThat(prompts.resolve(session, "I sneak past", plan, roll, direction))
                 .contains("At stake on failure: the dog barks", "ENCOUNTER moment", "The threat acts now",
                         "new named person", "surroundings must change", "healthDelta -5..0", "no new coins this turn", "openThreads in German");
+    }
+
+    @Test
+    void contextCarriesCoinsAndTheLayout() {
+        session.layout("A narrow stairwell with a bolted door at the top.");
+
+        assertThat(prompts.plan(session, "I climb"))
+                .contains("coins: 12", "layout: A narrow stairwell with a bolted door at the top.")
+                .doesNotContain("resolve:", "rations", "torch");
+    }
+
+    @Test
+    void successWithCostDemandsACost() {
+        ActionPlan plan = new ActionPlan(ActionPlan.Decision.ROLL, "", "Stealth", 14, 1, "a", "b");
+        RollResult roll = new RollResult("Stealth", 11, 1, 14, Degree.PARTIAL_SUCCESS);
+
+        assertThat(prompts.resolve(session, "I sneak past", plan, roll, new Direction(Beat.DISCOVERY, 1, false, false, false, true)))
+                .contains("must carry a real cost");
+    }
+
+    @Test
+    void deathRewritesTheTurn() {
+        assertThat(prompts.death(session, "I charge", "You charge and stand."))
+                .contains("You charge and stand.", "has just died", "end with the death", "in German");
+    }
+
+    @Test
+    void theModelSettlesTheLayoutBeforeItNarrates() {
+        String schema = JsonSchemas.json(TurnOutcome.class);
+
+        assertThat(schema.indexOf("\"layout\"")).isPositive().isLessThan(schema.indexOf("\"narration\""));
     }
 
     @Test

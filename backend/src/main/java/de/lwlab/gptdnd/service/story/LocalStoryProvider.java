@@ -34,7 +34,7 @@ public class LocalStoryProvider implements StoryProvider {
                 "%s, %s, cinematic adventure concept art".formatted(character.setting(), place),
                 german ? "Finde einen sicheren Weg aus dieser Gegend." : "Find a safe way out of this place.",
                 german ? "Etwas folgt dir und kommt näher." : "Something is following you and getting closer.",
-                List.of(), List.of());
+                List.of(), List.of(), "");
     }
 
     @Override
@@ -66,21 +66,21 @@ public class LocalStoryProvider implements StoryProvider {
             case PARTIAL_SUCCESS -> -1;
             default -> 0;
         };
-        int resolve = switch (degree) {
-            case CRITICAL_FAILURE, PARTIAL_SUCCESS -> -1;
-            case CRITICAL_SUCCESS -> 1;
-            default -> 0;
-        };
         boolean goodRoll = degree == Degree.SUCCESS || degree == Degree.CRITICAL_SUCCESS;
-        boolean badRoll = degree == Degree.FAILURE || degree == Degree.CRITICAL_FAILURE;
         List<String> gained = goodRoll && chance(58)
                 ? List.of(random(List.of("silver token", "clean bandage", "sealed clue", "warm meal")))
                 : List.of();
-        int rations = badRoll && chance(65) && session.resources().getOrDefault("rations", 0) > 0 ? -1 : 0;
-        return new TurnOutcome(text, place, health, resolve, gained, List.of(), 0, rations, 0, List.of(), List.of(), false,
+        return new TurnOutcome(text, place, health, gained, List.of(), 0, List.of(), List.of(), false,
                 suggestions(language), "%s, %s, player action: %s, %s, cinematic fantasy"
                         .formatted(session.character().setting(), place, action, degree.label()),
-                session.goal(), session.threat(), session.characters(), session.openThreads());
+                session.goal(), session.threat(), session.characters(), session.openThreads(), "");
+    }
+
+    @Override
+    public DeathScene death(GameSession session, String action, String narration) {
+        return new DeathScene(narration + (session.language() == Language.DE
+                ? "\n\nDann wird alles still. Hier endet deine Geschichte."
+                : "\n\nThen everything goes quiet. Your story ends here."));
     }
 
     private List<String> places(String setting) {
