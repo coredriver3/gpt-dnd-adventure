@@ -3,17 +3,16 @@
     <div class="brand">
       <span class="mark">20</span>
       <div>
-        <p class="eyebrow">Prototype</p>
+        <p class="eyebrow">{{ i18n.t('app.eyebrow') }}</p>
         <h1>GPT Dice Adventure</h1>
       </div>
     </div>
     <div class="toolbar">
-      <button type="button" title="Saved games" [class.current]="view() === 'sessions'" (click)="showSessions()">Games</button>
-      <button type="button" title="Start new game" [class.current]="view() === 'setup'" (click)="newGame()">New</button>
+      <button type="button" [title]="i18n.t('nav.gamesTitle')" [class.current]="view() === 'sessions'" (click)="showSessions()">{{ i18n.t('nav.games') }}</button>
+      <button type="button" [title]="i18n.t('nav.newTitle')" [class.current]="view() === 'setup'" (click)="newGame()">{{ i18n.t('nav.new') }}</button>
       <app-settings-menu
         [images]="session()?.images ?? true"
         [imagesAvailable]="!!session()"
-        [language]="language()"
         (toggleImages)="toggleImages()"
         (setLanguage)="setLanguage($event)"
       />
@@ -21,6 +20,10 @@
   </header>
 
   <div class="layout">
+    <aside class="dice-rail">
+      <app-dice-roll [roll]="shownRoll()" [rolling]="!!dice()" (finished)="finishDice()" />
+    </aside>
+
     <main class="story-column">
       @if (error()) {
         <p class="error">{{ error() }}</p>
@@ -51,7 +54,6 @@
               class="composer"
               [disabled]="busy() || !!session()?.dead"
               [busy]="busy()"
-              [language]="language()"
               [suggestions]="session()?.dead ? [] : (session()?.suggestedActions ?? [])"
               (sendAction)="sendAction($event)"
             />
@@ -60,12 +62,9 @@
       }
     </main>
 
-    <aside class="sidebar" aria-label="Character state">
+    <aside class="sidebar" [attr.aria-label]="i18n.t('dock.resources')">
       <app-session-dock [session]="session()" />
     </aside>
   </div>
 
-  @if (dice(); as roll) {
-    <app-dice-roll [roll]="roll" (finished)="finishDice()" />
-  }
 </div>

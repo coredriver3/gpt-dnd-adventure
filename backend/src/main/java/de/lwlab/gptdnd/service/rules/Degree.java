@@ -6,7 +6,10 @@ public enum Degree {
     PARTIAL_SUCCESS("success with cost", -2, 0, -1, 0),
     SUCCESS("success", -1, 1, 0, 1),
     CRITICAL_SUCCESS("critical success", 0, 2, 0, 1),
-    NO_ROLL("no roll needed", -1, 1, -1, 1);
+    AUTOMATIC_SUCCESS("automatic success", 0, 1, 0, 1),
+    AUTOMATIC_FAILURE("automatic failure", -1, 0, -1, 0);
+
+    private static final int THREAT_HARM = 2;
 
     private final String label;
     private final int minHealth;
@@ -26,8 +29,9 @@ public enum Degree {
         return label;
     }
 
-    public int clampHealth(int delta) {
-        return Math.max(minHealth, Math.min(maxHealth, delta));
+    /** {@code threatStrikes} allows extra harm: the threat can hurt the character even when the action went well. */
+    public int clampHealth(int delta, boolean threatStrikes) {
+        return Math.max(minHealth - (threatStrikes ? THREAT_HARM : 0), Math.min(maxHealth, delta));
     }
 
     public int clampResolve(int delta) {
@@ -38,8 +42,8 @@ public enum Degree {
         return this == CRITICAL_FAILURE || this == FAILURE;
     }
 
-    public String limits() {
-        return "healthDelta %d..%d, resolveDelta %d..%d%s".formatted(minHealth, maxHealth, minResolve, maxResolve,
+    public String limits(boolean threatStrikes) {
+        return "healthDelta %d..%d, resolveDelta %d..%d%s".formatted(minHealth - (threatStrikes ? THREAT_HARM : 0), maxHealth, minResolve, maxResolve,
                 allowsDeath() ? ", characterDied may be true only if the scene is truly lethal" : ", characterDied must be false");
     }
 

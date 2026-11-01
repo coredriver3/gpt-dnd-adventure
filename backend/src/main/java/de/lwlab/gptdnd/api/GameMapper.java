@@ -33,6 +33,8 @@ final class GameMapper {
                 session.resolve(),
                 session.maxResolve(),
                 session.location(),
+                session.goal(),
+                session.characters(),
                 session.resources(),
                 session.inventory(),
                 session.effects(),

@@ -11,8 +11,10 @@ import de.lwlab.gptdnd.domain.GameSetting;
 import de.lwlab.gptdnd.domain.Language;
 import de.lwlab.gptdnd.domain.StoryNode;
 import de.lwlab.gptdnd.service.rules.Degree;
+import de.lwlab.gptdnd.service.rules.Direction;
 import de.lwlab.gptdnd.service.rules.RollResult;
 import de.lwlab.gptdnd.service.rules.StartingGear;
+import de.lwlab.gptdnd.service.rules.StoryDirector;
 import de.lwlab.gptdnd.service.story.ActionPlan;
 import de.lwlab.gptdnd.service.story.SceneIntro;
 import de.lwlab.gptdnd.service.story.StoryProvider;
@@ -27,12 +29,22 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GameService {
     private static final int MAX_EFFECTS = 6;
     private static final int MAX_INVENTORY = 16;
+    private static final int MAX_CHARACTERS = 8;
+    private static final int MAX_THREADS = 4;
+    private static final int BEAT_MEMORY = 3;
+    private static final int MAX_COINS_FOUND = 6;
+    private static final Pattern VALID_CHARACTER = Pattern.compile("\\p{Lu}[^\\n/]{2,200}");
+    private static final Pattern VALID_THREAD = Pattern.compile("\\p{L}[^\\n/]{9,200}");
+    private static final Pattern TECHNICAL_TEXT = Pattern.compile(
+            "\\b(healthDelta|resolveDelta|coinDelta|rationsDelta|torchDelta|characterDied|itemsLost|itemsGained|effectsAdded"
+                    + "|effectsRemoved|suggestedActions|imagePrompt|openThreads)\\b");
 
     private final GameSessionRepository repository;
     private final StoryProvider storyProvider;
@@ -55,6 +67,7 @@ public class GameService {
         StartingGear gear = StartingGear.of(rollD20());
         SceneIntro intro = storyProvider.intro(session, gear);
         session.location(text(intro.location(), 200));
+        updateStoryState(session, intro.goal(), intro.threat(), intro.characters(), intro.openThreads());
         replaceSuggestions(session, intro.suggestedActions());
         List<Consequence> consequences = new ArrayList<>();
         for (String item : limit(intro.startingItems(), gear.itemCount())) {
@@ -62,7 +75,7 @@ public class GameService {
             consequences.add(new Consequence("gained " + text(item, 60), Consequence.Tone.GOOD));
         }
         DiceRoll roll = new DiceRoll("Starting gear", gear.natural(), 0, null, gear.outcome(), gear.tone());
-        addNode(session, StoryNode.SCENE, null, intro.narration(), "Starting gear: d20 %d / %s".formatted(gear.natural(), gear.outcome()),
+        addNode(session, StoryNode.SCENE, null, cleanNarration(intro.narration()), "Starting gear: d20 %d / %s".formatted(gear.natural(), gear.outcome()),
                 roll, intro.imagePrompt(), consequences);
         return repository.save(session);
     }
@@ -114,43 +127,85 @@ public class GameService {
 
     private void narrate(GameSession session, String text) {
         ActionPlan plan = storyProvider.plan(session, text);
-        if (!plan.valid()) {
+        if (plan.decision() == ActionPlan.Decision.INVALID) {
             reject(session, text, clean(plan.rejection(), "Input rejected: that action does not fit the current scene."));
             return;
         }
         RollResult roll = null;
-        if (plan.rollNeeded()) {
+        Degree degree = plan.decision() == ActionPlan.Decision.AUTOMATIC_FAILURE ? Degree.AUTOMATIC_FAILURE : Degree.AUTOMATIC_SUCCESS;
+        if (plan.decision() == ActionPlan.Decision.ROLL) {
             int difficulty = clamp(plan.difficulty(), 5, 25);
             int modifier = clamp(plan.modifier(), -2, 3);
             int natural = rollD20();
-            roll = new RollResult(clean(plan.skill(), "Check"), natural, modifier, difficulty,
-                    Degree.of(natural, natural + modifier, difficulty));
+            degree = Degree.of(natural, natural + modifier, difficulty);
+            roll = new RollResult(clean(plan.skill(), "Check"), natural, modifier, difficulty, degree);
         }
-        TurnOutcome outcome = storyProvider.resolve(session, text, plan, roll);
-        Degree degree = roll == null ? Degree.NO_ROLL : roll.degree();
+        Direction direction = StoryDirector.next(session, degree, ThreadLocalRandom.current());
+        TurnOutcome outcome = storyProvider.resolve(session, text, plan, roll, direction);
+        if (TECHNICAL_TEXT.matcher(outcome.narration()).find()) {
+            outcome = storyProvider.resolve(session, text, plan, roll, direction);
+        }
         Consequence.Tone tone = switch (degree) {
             case SUCCESS, CRITICAL_SUCCESS -> Consequence.Tone.GOOD;
-            case FAILURE, CRITICAL_FAILURE -> Consequence.Tone.BAD;
+            case FAILURE, CRITICAL_FAILURE, AUTOMATIC_FAILURE -> Consequence.Tone.BAD;
             default -> Consequence.Tone.NEUTRAL;
         };
         DiceRoll dice = roll == null ? null
                 : new DiceRoll(roll.skill(), roll.natural(), roll.modifier(), roll.difficulty(), degree.label(), tone);
-        List<Consequence> consequences = apply(session, outcome, degree);
+        List<Consequence> consequences = apply(session, outcome, degree, direction);
         consequences.add(new Consequence(degree.label(), tone));
-        addNode(session, StoryNode.STORY, text, outcome.narration(), roll == null ? "no roll" : roll.describe(),
+        addNode(session, StoryNode.STORY, text, cleanNarration(outcome.narration()), roll == null ? "no roll" : roll.describe(),
                 dice, outcome.imagePrompt(), consequences);
     }
 
+    /** Models sometimes spill structured fields or stray markup into the prose; that never reaches the player. */
+    private static String cleanNarration(String narration) {
+        return narration.lines()
+                .filter(line -> !TECHNICAL_TEXT.matcher(line).find())
+                .collect(java.util.stream.Collectors.joining("\n"))
+                .replaceFirst("^[\\s>#*]+", "")
+                .trim();
+    }
+
+    /** Keeps the current list unless the model delivered usable entries; weak models fill these fields with garbage. */
+    private static void replaceStoryList(List<String> current, List<String> proposed, int max, Pattern valid) {
+        List<String> usable = limit(proposed, Integer.MAX_VALUE).stream()
+                .filter(entry -> valid.matcher(entry).matches())
+                .limit(max)
+                .toList();
+        if (!usable.isEmpty()) {
+            current.clear();
+            usable.forEach(entry -> current.add(text(entry, 300)));
+        }
+    }
+
+    private void updateStoryState(GameSession session, String goal, String threat, List<String> characters, List<String> openThreads) {
+        if (goal != null && !goal.isBlank()) {
+            session.goal(text(goal, 500));
+        }
+        if (threat != null && !threat.isBlank()) {
+            session.threat(text(threat, 500));
+        }
+        replaceStoryList(session.characters(), characters, MAX_CHARACTERS, VALID_CHARACTER);
+        replaceStoryList(session.openThreads(), openThreads, MAX_THREADS, VALID_THREAD);
+    }
+
     /** Applies the narrator's proposed changes, clamped to what the rolled degree allows. */
-    private List<Consequence> apply(GameSession session, TurnOutcome outcome, Degree degree) {
+    private List<Consequence> apply(GameSession session, TurnOutcome outcome, Degree degree, Direction direction) {
         List<Consequence> consequences = new ArrayList<>();
         session.incrementTurn();
         if (outcome.location() != null && !outcome.location().isBlank()) {
             session.location(text(outcome.location(), 200));
         }
         replaceSuggestions(session, outcome.suggestedActions());
+        updateStoryState(session, outcome.goal(), outcome.threat(), outcome.characters(), outcome.openThreads());
+        session.threatClock(direction.threatClock());
+        session.recentBeats().add(direction.beat());
+        if (session.recentBeats().size() > BEAT_MEMORY) {
+            session.recentBeats().removeFirst();
+        }
 
-        int health = degree.clampHealth(outcome.healthDelta());
+        int health = degree.clampHealth(outcome.healthDelta(), direction.threatStrikes());
         int resolve = degree.clampResolve(outcome.resolveDelta());
         session.health(session.health() + health);
         session.resolve(session.resolve() + resolve);
@@ -161,7 +216,7 @@ public class GameService {
             consequences.add(new Consequence(signed(resolve) + " resolve", resolve > 0 ? Consequence.Tone.GOOD : Consequence.Tone.BAD));
         }
 
-        changeResource(session, "coin", clamp(outcome.coinDelta(), -10, 10), consequences);
+        changeResource(session, "coin", clamp(outcome.coinDelta(), Integer.MIN_VALUE, direction.coinsAllowed() ? MAX_COINS_FOUND : 0), consequences);
         changeResource(session, "rations", clamp(outcome.rationsDelta(), -2, 2), consequences);
         changeResource(session, "torch", clamp(outcome.torchDelta(), -2, 2), consequences);
 
@@ -222,30 +277,13 @@ public class GameService {
 
     private void runCommand(GameSession session, String text) {
         String command = text.substring(1, text.length() - 1).trim().toLowerCase();
-        if (command.startsWith("roll")) {
-            int sides = 20;
-            int mod = 0;
-            var matcher = java.util.regex.Pattern.compile("d(\\d+)([+-]\\d+)?").matcher(command);
-            if (matcher.find()) {
-                sides = clamp(Integer.parseInt(matcher.group(1)), 2, 100);
-                mod = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
-            }
-            int natural = ThreadLocalRandom.current().nextInt(1, sides + 1);
-            int total = natural + mod;
-            DiceRoll dice = sides == 20 ? new DiceRoll("Manual roll", natural, mod, null, "", Consequence.Tone.NEUTRAL) : null;
-            addNode(session, StoryNode.COMMAND, text, "Manual roll: d%s%s = %s. The story does not advance."
-                            .formatted(sides, mod == 0 ? "" : signed(mod), total),
-                    String.valueOf(total), dice, null, List.of(new Consequence("command mode", Consequence.Tone.NEUTRAL)));
-            return;
-        }
-
         Map<String, String> reports = Map.of(
                 "inventory", "Inventory: " + String.join(", ", session.inventory()) + ".",
                 "status", "Health %s/%s, Resolve %s/%s. Location: %s. Effects: %s.".formatted(
                         session.health(), session.maxHealth(), session.resolve(), session.maxResolve(),
                         session.location().isBlank() ? "unknown" : session.location(),
                         session.effects().isEmpty() ? "none" : String.join(", ", session.effects())),
-                "help", "Commands: [inventory], [status], [roll d20+2], [image on], [image off].",
+                "help", "Commands: [inventory], [status], [image on], [image off].",
                 "image on", "Scene image cards enabled.",
                 "image off", "Scene image cards disabled.");
         if (Objects.equals(command, "image on")) {
@@ -282,7 +320,8 @@ public class GameService {
     }
 
     private static String text(String value, int maxLength) {
-        String cleaned = value == null ? "" : value.trim();
+        // Models tend to keep using dashes as punctuation despite the prompt.
+        String cleaned = value == null ? "" : value.trim().replaceAll("\\s*[\u2014\u2013]\\s*|\\s+-\\s+", ", ");
         return cleaned.length() <= maxLength ? cleaned : cleaned.substring(0, maxLength);
     }
 

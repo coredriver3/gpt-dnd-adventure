@@ -36,13 +36,13 @@ class OpenRouterStoryProviderTest {
         server.expect(requestTo("https://openrouter.test/api/v1/chat/completions"))
                 .andExpect(jsonPath("$.model").value("nvidia/nemotron-3.5-super-vl:free"))
                 .andExpect(jsonPath("$.response_format.json_schema.schema.required").isArray())
-                .andRespond(withSuccess(completion("```json\\n{\\\"valid\\\": true, \\\"rejection\\\": \\\"\\\", "
-                        + "\\\"rollNeeded\\\": true, \\\"skill\\\": \\\"Stealth\\\", \\\"difficulty\\\": 14, \\\"modifier\\\": 2}\\n```"),
+                .andRespond(withSuccess(completion("```json\\n{\\\"decision\\\": \\\"ROLL\\\", \\\"rejection\\\": \\\"\\\", "
+                        + "\\\"skill\\\": \\\"Stealth\\\", \\\"difficulty\\\": 14, \\\"modifier\\\": 2}\\n```"),
                         MediaType.APPLICATION_JSON));
 
         ActionPlan plan = provider.plan(session, "I sneak past the guard");
 
-        assertThat(plan.rollNeeded()).isTrue();
+        assertThat(plan.decision()).isEqualTo(ActionPlan.Decision.ROLL);
         assertThat(plan.skill()).isEqualTo("Stealth");
         assertThat(plan.difficulty()).isEqualTo(14);
         server.verify();

@@ -92,3 +92,9 @@ input[type='checkbox'] {
   height: 18px;
   accent-color: var(--accent);
 }
+
+@media (max-width: 520px) {
+  .trigger-label {
+    display: none;
+  }
+}

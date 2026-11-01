@@ -16,6 +16,8 @@ public record GameSessionResponse(
         int resolve,
         int maxResolve,
         String location,
+        String goal,
+        List<String> people,
         Map<String, Integer> resources,
         List<String> inventory,
         List<String> effects,

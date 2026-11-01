@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { GameApiService } from '../../../../core/api/game-api.service';
+import { TranslationKey } from '../../../../core/i18n/translations';
 import { CreateSessionRequest, DiceRoll, GameSession, SessionSummary, Setting } from '../../../../core/models/game.models';
 import { ActionComposerComponent } from '../../components/action-composer/action-composer.component';
 import { CharacterSetupComponent } from '../../components/character-setup/character-setup.component';
@@ -30,6 +32,7 @@ const LAST_SESSION_KEY = 'gpt-dnd.lastSession';
 })
 export class AdventurePageComponent implements OnInit {
   private readonly api = inject(GameApiService);
+  protected readonly i18n = inject(I18nService);
 
   protected readonly settings = signal<Setting[]>([]);
   protected readonly session = signal<GameSession | null>(null);
@@ -40,18 +43,16 @@ export class AdventurePageComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly dice = signal<DiceRoll | null>(null);
   private afterDice: (() => void) | null = null;
-  private readonly setupLanguage = signal<'de' | 'en'>('de');
-  protected readonly language = computed(() => this.session()?.language ?? this.setupLanguage());
+  /** The roll in the dice window: the one being thrown, otherwise the latest of the game. */
+  protected readonly shownRoll = computed(() => {
+    const nodes = this.session()?.nodes ?? [];
+    return this.dice() ?? [...nodes].reverse().find((node) => node.roll)?.roll ?? null;
+  });
 
   ngOnInit(): void {
     this.api.settings().subscribe({
       next: (settings) => this.settings.set(settings),
-      error: (error: HttpErrorResponse) => {
-        const detail = error.status ? ` (HTTP ${error.status})` : '';
-        this.error.set(
-          `API request failed${detail}. Run "npm run dev:frontend" and open http://localhost:4200/.`,
-        );
-      },
+      error: () => this.error.set(this.i18n.t('error.api')),
     });
     this.resume();
   }
@@ -85,7 +86,7 @@ export class AdventurePageComponent implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.sessionsLoading.set(false);
-        this.error.set(this.message(error, 'Could not load saved games.'));
+        this.error.set(this.message(error, 'error.games'));
       },
     });
   }
@@ -102,7 +103,7 @@ export class AdventurePageComponent implements OnInit {
         this.busy.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.error.set(this.message(error, 'Could not load game.'));
+        this.error.set(this.message(error, 'error.game'));
         this.busy.set(false);
       },
     });
@@ -119,7 +120,7 @@ export class AdventurePageComponent implements OnInit {
           writeLastSession(null);
         }
       },
-      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'Could not delete game.')),
+      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'error.delete')),
     });
   }
 
@@ -131,7 +132,7 @@ export class AdventurePageComponent implements OnInit {
 
   create(request: CreateSessionRequest): void {
     this.busy.set(true);
-    this.api.createSession({ ...request, language: this.language() }).subscribe({
+    this.api.createSession({ ...request, language: this.i18n.language() }).subscribe({
       next: (session) => {
         this.revealRoll(session.nodes.at(-1)?.roll ?? null, () => {
           this.play(session);
@@ -139,7 +140,7 @@ export class AdventurePageComponent implements OnInit {
         });
       },
       error: (error: HttpErrorResponse) => {
-        this.error.set(this.message(error, 'Could not create session.'));
+        this.error.set(this.message(error, 'error.create'));
         this.busy.set(false);
       },
     });
@@ -161,7 +162,7 @@ export class AdventurePageComponent implements OnInit {
         });
       },
       error: (error: HttpErrorResponse) => {
-        this.error.set(this.message(error, 'Action failed.'));
+        this.error.set(this.message(error, 'error.action'));
         this.busy.set(false);
       },
     });
@@ -174,19 +175,19 @@ export class AdventurePageComponent implements OnInit {
     }
     this.api.updatePreferences(active.id, { images: !active.images }).subscribe({
       next: (session) => this.session.set(session),
-      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'Could not change images.')),
+      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'error.images')),
     });
   }
 
   setLanguage(language: 'de' | 'en'): void {
+    this.i18n.language.set(language);
     const active = this.session();
     if (!active) {
-      this.setupLanguage.set(language);
       return;
     }
     this.api.updatePreferences(active.id, { language }).subscribe({
       next: (session) => this.session.set(session),
-      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'Could not change language.')),
+      error: (error: HttpErrorResponse) => this.error.set(this.message(error, 'error.language')),
     });
   }
 
@@ -209,14 +210,15 @@ export class AdventurePageComponent implements OnInit {
 
   private play(session: GameSession): void {
     this.session.set(session);
+    this.i18n.language.set(session.language);
     this.view.set('play');
     this.error.set(null);
     writeLastSession(session.id);
   }
 
-  private message(error: HttpErrorResponse, fallback: string): string {
+  private message(error: HttpErrorResponse, key: TranslationKey): string {
     const detail = (error.error as { error?: string } | null)?.error;
-    return detail ? `${fallback} ${detail}` : fallback;
+    return detail ? `${this.i18n.t(key)} ${this.i18n.server(detail)}` : this.i18n.t(key);
   }
 }
 

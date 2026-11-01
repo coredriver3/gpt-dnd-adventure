@@ -56,10 +56,15 @@ HTML entry point does neither.
 
 Claude (`ClaudeStoryProvider`) runs the game as narrator. Each action is resolved in two steps:
 
-1. **Plan** – Claude checks whether the action fits the scene, whether it needs a roll, and picks
-   skill, difficulty (DC) and a modifier.
-2. **Resolve** – the backend rolls the d20 and determines the degree of success. Claude then narrates
-   the outcome and proposes state changes (health, resolve, resources, items, effects).
+1. **Plan** – the model decides whether the action simply works, cannot work, or is uncertain enough to
+   roll. For a roll it picks skill, difficulty (DC), modifier and what is at stake.
+2. **Resolve** – the backend rolls the d20 if needed and adds directions for the turn. The model then
+   narrates the outcome and proposes state changes and story state updates.
+
+The story director (`StoryDirector`) keeps the pacing varied: it picks the kind of moment each turn delivers,
+advances a hidden threat clock that forces the threat to act, requires a named person by turn 3 and new
+surroundings every 5 turns, and limits how often coins can be found. Goal, threat, people and open threads are
+stored per game and sent along with every turn.
 
 The backend stays the rules authority: it rolls the dice and clamps every proposed change to what the
 rolled degree allows, so the model cannot hand out free wins or kill a character after a success.

@@ -1,35 +1,35 @@
 <form class="setup-panel" (ngSubmit)="submit()">
   <label>
-    Name
-    <input name="name" type="text" maxlength="28" autocomplete="off" placeholder="Your character's name" [(ngModel)]="model.name" />
+    {{ i18n.t('setup.name') }}
+    <input name="name" type="text" maxlength="28" autocomplete="off" [placeholder]="i18n.t('setup.namePlaceholder')" [(ngModel)]="model.name" />
   </label>
   <label>
-    Character background
+    {{ i18n.t('setup.background') }}
     <input
       name="concept"
       type="text"
       maxlength="80"
       autocomplete="off"
-      placeholder="e.g. disgraced city guard with gambling debts"
+      [placeholder]="i18n.t('setup.backgroundPlaceholder')"
       [(ngModel)]="model.concept"
     />
   </label>
   <label>
-    Setting
+    {{ i18n.t('setup.setting') }}
     <input
       name="setting"
       type="text"
       maxlength="120"
       autocomplete="off"
       list="setting-suggestions"
-      placeholder="Pick a suggestion or describe any world"
+      [placeholder]="i18n.t('setup.settingPlaceholder')"
       [(ngModel)]="model.setting"
     />
     <datalist id="setting-suggestions">
       @for (setting of settings; track setting.id) {
-        <option [value]="setting.label"></option>
+        <option [value]="i18n.server(setting.label)"></option>
       }
     </datalist>
   </label>
-  <button type="submit" [disabled]="busy || !complete">{{ busy ? 'Creating ...' : 'Create' }}</button>
+  <button type="submit" [disabled]="busy || !complete">{{ i18n.t(busy ? 'setup.creating' : 'setup.create') }}</button>
 </form>

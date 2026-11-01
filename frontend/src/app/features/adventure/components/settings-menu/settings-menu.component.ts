@@ -1,4 +1,5 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, inject, signal } from '@angular/core';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-settings-menu',
@@ -8,10 +9,10 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, injec
 export class SettingsMenuComponent {
   @Input() images = true;
   @Input() imagesAvailable = false;
-  @Input() language: 'de' | 'en' = 'de';
   @Output() toggleImages = new EventEmitter<void>();
   @Output() setLanguage = new EventEmitter<'de' | 'en'>();
 
+  protected readonly i18n = inject(I18nService);
   protected readonly open = signal(false);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -28,7 +29,7 @@ export class SettingsMenuComponent {
   }
 
   chooseLanguage(language: 'de' | 'en'): void {
-    if (language !== this.language) {
+    if (language !== this.i18n.language()) {
       this.setLanguage.emit(language);
     }
   }

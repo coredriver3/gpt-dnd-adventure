@@ -1,6 +1,7 @@
 package de.lwlab.gptdnd.service.story;
 
 import de.lwlab.gptdnd.domain.GameSession;
+import de.lwlab.gptdnd.service.rules.Direction;
 import de.lwlab.gptdnd.service.rules.RollResult;
 import de.lwlab.gptdnd.service.rules.StartingGear;
 import java.util.List;
@@ -50,8 +51,8 @@ public class OpenRouterStoryProvider implements StoryProvider {
     }
 
     @Override
-    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll) {
-        return call(session, TurnOutcome.class, prompts.resolve(session, action, roll));
+    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll, Direction direction) {
+        return call(session, TurnOutcome.class, prompts.resolve(session, action, plan, roll, direction));
     }
 
     private <T> T call(GameSession session, Class<T> type, String prompt) {

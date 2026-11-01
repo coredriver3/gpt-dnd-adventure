@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-action-composer',
@@ -10,10 +11,10 @@ import { FormsModule } from '@angular/forms';
 export class ActionComposerComponent {
   @Input() disabled = false;
   @Input() busy = false;
-  @Input() language: 'de' | 'en' = 'de';
   @Input() suggestions: string[] = [];
   @Output() sendAction = new EventEmitter<string>();
 
+  protected readonly i18n = inject(I18nService);
   protected text = '';
 
   submit(): void {
@@ -27,14 +28,5 @@ export class ActionComposerComponent {
 
   choose(suggestion: string): void {
     this.sendAction.emit(suggestion);
-  }
-
-  placeholder(): string {
-    if (this.busy) {
-      return this.language === 'de' ? 'Der Erzähler denkt nach ...' : 'The narrator is thinking ...';
-    }
-    return this.language === 'de'
-      ? 'Was tust du? Oder [inventory], [status], [roll d20+2] ...'
-      : 'What do you do? Or [inventory], [status], [roll d20+2] ...';
   }
 }

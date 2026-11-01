@@ -1,29 +1,30 @@
 <button
   type="button"
   class="trigger"
-  title="Settings"
+  [title]="i18n.t('settings.title')"
+  [attr.aria-label]="i18n.t('settings.title')"
   aria-haspopup="true"
   [attr.aria-expanded]="open()"
   (click)="open.set(!open())"
 >
-  <span aria-hidden="true">&#9881;</span> Settings
+  <span aria-hidden="true">&#9881;</span> <span class="trigger-label">{{ i18n.t('settings.title') }}</span>
 </button>
 
 @if (open()) {
   <div class="menu" role="menu">
     <div class="row">
-      <span>Language</span>
-      <div class="segmented" role="group" aria-label="Language">
-        <button type="button" [class.selected]="language === 'de'" (click)="chooseLanguage('de')">DE</button>
-        <button type="button" [class.selected]="language === 'en'" (click)="chooseLanguage('en')">EN</button>
+      <span>{{ i18n.t('settings.language') }}</span>
+      <div class="segmented" role="group" [attr.aria-label]="i18n.t('settings.language')">
+        <button type="button" [class.selected]="i18n.language() === 'de'" (click)="chooseLanguage('de')">DE</button>
+        <button type="button" [class.selected]="i18n.language() === 'en'" (click)="chooseLanguage('en')">EN</button>
       </div>
     </div>
 
     <label class="row" [class.disabled]="!imagesAvailable">
       <span>
-        Scene images
+        {{ i18n.t('settings.images') }}
         @if (!imagesAvailable) {
-          <small>Start a game first</small>
+          <small>{{ i18n.t('settings.imagesHint') }}</small>
         }
       </span>
       <input type="checkbox" role="switch" [checked]="images" [disabled]="!imagesAvailable" (change)="toggleImages.emit()" />

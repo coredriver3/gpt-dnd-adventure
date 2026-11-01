@@ -1,19 +1,19 @@
-<section class="session-list" aria-label="Saved games">
+<section class="session-list" [attr.aria-label]="i18n.t('games.title')">
   <header class="list-header">
     <div>
-      <h2>Saved games</h2>
-      <p>{{ loading ? 'Loading ...' : sessions.length + (sessions.length === 1 ? ' game' : ' games') }}</p>
+      <h2>{{ i18n.t('games.title') }}</h2>
+      <p>{{ loading ? i18n.t('games.loading') : sessions.length + ' ' + i18n.t(sessions.length === 1 ? 'games.one' : 'games.many') }}</p>
     </div>
     <div class="list-actions">
-      <button type="button" class="primary" (click)="newGame.emit()">New game</button>
+      <button type="button" class="primary" (click)="newGame.emit()">{{ i18n.t('games.new') }}</button>
       @if (activeId) {
-        <button type="button" (click)="closeList.emit()">Back to game</button>
+        <button type="button" (click)="closeList.emit()">{{ i18n.t('games.back') }}</button>
       }
     </div>
   </header>
 
   @if (!loading && sessions.length === 0) {
-    <p class="empty">No saved games yet. Start a new one.</p>
+    <p class="empty">{{ i18n.t('games.empty') }}</p>
   }
 
   <ul class="cards">
@@ -29,26 +29,26 @@
           <span class="card-head">
             <strong>{{ session.name }}</strong>
             @if (session.dead) {
-              <span class="badge bad">dead</span>
+              <span class="badge bad">{{ i18n.t('games.dead') }}</span>
             } @else if (session.id === activeId) {
-              <span class="badge">current</span>
+              <span class="badge">{{ i18n.t('games.current') }}</span>
             }
           </span>
           <span class="concept">{{ session.concept }}</span>
-          <span class="meta">{{ session.setting.label }}</span>
+          <span class="meta">{{ i18n.server(session.setting.label) }}</span>
           @if (session.location) {
             <span class="location">{{ session.location }}</span>
           }
           <span class="health" aria-hidden="true"><i [style.--value.%]="percent(session.health, session.maxHealth)"></i></span>
-          <span class="meta">Turn {{ session.turn }} · {{ session.lastPlayedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+          <span class="meta">{{ i18n.t('games.turn') }} {{ session.turn }} · {{ session.lastPlayedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
         </button>
         <div class="card-delete">
           @if (confirmingId() === session.id) {
-            <span>Delete forever?</span>
-            <button type="button" class="danger" (click)="deleteSession.emit(session.id); confirmingId.set(null)">Delete</button>
-            <button type="button" (click)="confirmingId.set(null)">Keep</button>
+            <span>{{ i18n.t('games.deleteConfirm') }}</span>
+            <button type="button" class="danger" (click)="deleteSession.emit(session.id); confirmingId.set(null)">{{ i18n.t('games.delete') }}</button>
+            <button type="button" (click)="confirmingId.set(null)">{{ i18n.t('games.keep') }}</button>
           } @else {
-            <button type="button" [attr.aria-label]="'Delete game of ' + session.name" (click)="confirmingId.set(session.id)">Delete</button>
+            <button type="button" [attr.aria-label]="i18n.t('games.delete') + ': ' + session.name" (click)="confirmingId.set(session.id)">{{ i18n.t('games.delete') }}</button>
           }
         </div>
       </li>

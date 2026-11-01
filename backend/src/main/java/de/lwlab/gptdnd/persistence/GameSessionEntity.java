@@ -1,5 +1,6 @@
 package de.lwlab.gptdnd.persistence;
 
+import de.lwlab.gptdnd.domain.Beat;
 import de.lwlab.gptdnd.domain.CharacterProfile;
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.Language;
@@ -20,9 +21,11 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "game_sessions")
@@ -52,6 +55,29 @@ public class GameSessionEntity {
 
     @Column(length = 200)
     private String location;
+
+    @Column(length = 500)
+    private String storyGoal;
+
+    @Column(length = 500)
+    private String storyThreat;
+
+    // Nullable: games from before the story state existed have no value yet.
+    private Integer threatClock;
+
+    private String recentBeats;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "session_story_characters", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "description", length = 300)
+    private List<String> storyCharacters = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "session_open_threads", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "thread", length = 300)
+    private List<String> openThreads = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "session_suggested_actions", joinColumns = @JoinColumn(name = "session_id"))
@@ -104,6 +130,12 @@ public class GameSessionEntity {
         entity.effects = new ArrayList<>(session.effects());
         entity.location = session.location();
         entity.suggestedActions = new ArrayList<>(session.suggestedActions());
+        entity.storyGoal = session.goal();
+        entity.storyThreat = session.threat();
+        entity.threatClock = session.threatClock();
+        entity.recentBeats = session.recentBeats().stream().map(Beat::name).collect(Collectors.joining(","));
+        entity.storyCharacters = new ArrayList<>(session.characters());
+        entity.openThreads = new ArrayList<>(session.openThreads());
         for (int i = 0; i < session.nodes().size(); i++) {
             entity.nodes.add(StoryNodeEntity.fromDomain(session.nodes().get(i), entity, i));
         }
@@ -131,6 +163,14 @@ public class GameSessionEntity {
         session.effects().addAll(effects);
         session.location(location);
         session.suggestedActions().addAll(suggestedActions);
+        session.goal(storyGoal);
+        session.threat(storyThreat);
+        session.threatClock(threatClock == null ? 0 : threatClock);
+        if (recentBeats != null && !recentBeats.isBlank()) {
+            Arrays.stream(recentBeats.split(",")).map(Beat::valueOf).forEach(session.recentBeats()::add);
+        }
+        session.characters().addAll(storyCharacters);
+        session.openThreads().addAll(openThreads);
         session.nodes().clear();
         session.nodes().addAll(nodes.stream().map(StoryNodeEntity::toDomain).toList());
         return session;

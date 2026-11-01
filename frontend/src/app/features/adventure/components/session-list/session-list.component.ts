@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { SessionSummary } from '../../../../core/models/game.models';
 
 @Component({
@@ -17,6 +18,7 @@ export class SessionListComponent {
   @Output() closeList = new EventEmitter<void>();
   @Output() deleteSession = new EventEmitter<string>();
 
+  protected readonly i18n = inject(I18nService);
   protected readonly confirmingId = signal<string | null>(null);
 
   percent(value: number, max: number): number {

@@ -19,11 +19,17 @@ public class GameSession {
     private int resolve = 6;
     private int maxResolve = 6;
     private String location = "";
+    private String goal = "";
+    private String threat = "";
+    private int threatClock = 0;
     private final Map<String, Integer> resources = new LinkedHashMap<>();
     private final List<String> inventory = new ArrayList<>();
     private final List<String> effects = new ArrayList<>();
     private final List<StoryNode> nodes = new ArrayList<>();
     private final List<String> suggestedActions = new ArrayList<>();
+    private final List<String> characters = new ArrayList<>();
+    private final List<String> openThreads = new ArrayList<>();
+    private final List<Beat> recentBeats = new ArrayList<>();
 
     public GameSession(String id, CharacterProfile character, Instant createdAt) {
         this.id = id;
@@ -128,6 +134,42 @@ public class GameSession {
 
     public List<String> suggestedActions() {
         return suggestedActions;
+    }
+
+    public String goal() {
+        return goal;
+    }
+
+    public void goal(String goal) {
+        this.goal = goal == null ? "" : goal;
+    }
+
+    public String threat() {
+        return threat;
+    }
+
+    public void threat(String threat) {
+        this.threat = threat == null ? "" : threat;
+    }
+
+    public int threatClock() {
+        return threatClock;
+    }
+
+    public void threatClock(int threatClock) {
+        this.threatClock = threatClock;
+    }
+
+    public List<String> characters() {
+        return characters;
+    }
+
+    public List<String> openThreads() {
+        return openThreads;
+    }
+
+    public List<Beat> recentBeats() {
+        return recentBeats;
     }
 
     public Instant lastPlayedAt() {

@@ -11,6 +11,7 @@ import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.StructuredMessage;
 import com.anthropic.models.messages.StructuredMessageCreateParams;
 import de.lwlab.gptdnd.domain.GameSession;
+import de.lwlab.gptdnd.service.rules.Direction;
 import de.lwlab.gptdnd.service.rules.RollResult;
 import de.lwlab.gptdnd.service.rules.StartingGear;
 
@@ -46,8 +47,8 @@ public class ClaudeStoryProvider implements StoryProvider {
     }
 
     @Override
-    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll) {
-        return call(session, TurnOutcome.class, turnConfig, prompts.resolve(session, action, roll));
+    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll, Direction direction) {
+        return call(session, TurnOutcome.class, turnConfig, prompts.resolve(session, action, plan, roll, direction));
     }
 
     private <T> T call(GameSession session, Class<T> type, OutputConfig config, String prompt) {

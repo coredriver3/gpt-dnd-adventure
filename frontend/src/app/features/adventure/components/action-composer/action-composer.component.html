@@ -13,9 +13,9 @@
     type="text"
     autocomplete="off"
     maxlength="500"
-    [placeholder]="placeholder()"
+    [placeholder]="i18n.t(busy ? 'composer.thinking' : 'composer.placeholder')"
     [disabled]="disabled"
     [(ngModel)]="text"
   />
-  <button type="submit" class="act" [disabled]="disabled">{{ busy ? '...' : 'Act' }}</button>
+  <button type="submit" class="act" [disabled]="disabled">{{ busy ? '...' : i18n.t('composer.act') }}</button>
 </form>

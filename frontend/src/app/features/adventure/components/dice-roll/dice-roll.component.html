@@ -1,40 +1,66 @@
-<div class="overlay" role="dialog" aria-modal="true" [attr.aria-label]="'Dice roll: ' + roll.label">
-  <p class="label">
-    {{ roll.label }}
-    @if (roll.difficulty !== null) {
-      <span class="target">DC {{ roll.difficulty }}</span>
-    }
-  </p>
-
+<section class="dice-window" [attr.aria-label]="i18n.t('dice.title')">
   <div class="stage" aria-hidden="true">
-    <div class="bouncer" #bouncer>
-      <div class="die" #die>
-        @for (face of faces; track face.value) {
-          <div
-            class="face"
-            [class.result]="landed() && face.value === roll.natural"
-            [style.width.px]="faceWidth"
-            [style.height.px]="faceHeight"
-            [style.transform]="face.transform"
-          >
-            <span [class.underlined]="face.value === 6 || face.value === 9">{{ face.value }}</span>
-          </div>
-        }
+    <div class="sizer">
+      <div class="bouncer" #bouncer>
+        <div class="die" #die>
+          @for (face of faces; track face.value) {
+            <div
+              class="face"
+              [class.result]="landed() && face.value === roll?.natural"
+              [style.width.px]="faceWidth"
+              [style.height.px]="faceHeight"
+              [style.transform]="face.transform"
+            >
+              <span [class.underlined]="face.value === 6 || face.value === 9">{{ face.value }}</span>
+            </div>
+          }
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="result-text" aria-live="polite">
-    @if (landed()) {
-      <strong>
-        {{ roll.natural }}
-        @if (roll.modifier !== 0) {
-          {{ signedModifier }} = {{ total }}
+  <div class="details" aria-live="polite">
+    @if (roll; as r) {
+      <p class="label">{{ i18n.server(r.label) }}</p>
+      @if (landed()) {
+        <div class="sums">
+          <div class="cell">
+            <small>{{ i18n.t('dice.roll') }}</small>
+            <b>{{ r.natural }}</b>
+          </div>
+          @if (r.modifier !== 0) {
+            <div class="cell">
+              <small>{{ i18n.t('dice.bonus') }}</small>
+              <b>{{ signedModifier }}</b>
+            </div>
+            <div class="cell strong">
+              <small>{{ i18n.t('dice.total') }}</small>
+              <b>{{ total }}</b>
+            </div>
+          }
+          @if (r.difficulty !== null) {
+            <div class="cell">
+              <small>{{ i18n.t('dice.target') }}</small>
+              <b>{{ r.difficulty }}</b>
+            </div>
+          }
+        </div>
+        @if (r.outcome) {
+          <p class="outcome" [class.good]="r.tone === 'good'" [class.bad]="r.tone === 'bad'">{{ i18n.server(r.outcome) }}</p>
         }
-      </strong>
-      @if (roll.outcome) {
-        <span class="outcome" [class.good]="roll.tone === 'good'" [class.bad]="roll.tone === 'bad'">{{ roll.outcome }}</span>
+      } @else {
+        @if (r.difficulty !== null) {
+          <div class="sums">
+            <div class="cell">
+              <small>{{ i18n.t('dice.target') }}</small>
+              <b>{{ r.difficulty }}</b>
+            </div>
+          </div>
+        }
+        <p class="status">{{ i18n.t('dice.rolling') }}</p>
       }
+    } @else {
+      <p class="status">{{ i18n.t('dice.idle') }}</p>
     }
   </div>
-</div>
+</section>

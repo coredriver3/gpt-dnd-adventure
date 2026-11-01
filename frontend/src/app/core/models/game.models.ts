@@ -49,6 +49,8 @@ export interface GameSession {
   resolve: number;
   maxResolve: number;
   location: string;
+  goal: string;
+  people: string[];
   resources: Record<string, number>;
   inventory: string[];
   effects: string[];

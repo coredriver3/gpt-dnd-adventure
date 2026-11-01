@@ -1,43 +1,30 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 16px;
-  overflow: hidden;
-  background: rgba(10, 11, 8, 0.86);
-  cursor: pointer;
+:host {
+  display: block;
+  --die-scale: 0.68;
+  --stage-size: 170px;
 }
 
-.label {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 800;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.target {
-  margin-left: 10px;
-  padding: 3px 10px;
-  border: 1px solid rgba(227, 179, 65, 0.5);
-  border-radius: 999px;
-  color: var(--accent);
-  font-size: 0.95rem;
+.dice-window {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 16px 14px;
 }
 
 .stage {
   display: grid;
   place-items: center;
-  width: 240px;
-  height: 240px;
+  width: var(--stage-size);
+  height: var(--stage-size);
   perspective: 800px;
 }
 
+.sizer {
+  transform: scale(var(--die-scale));
+  transform-style: preserve-3d;
+}
+
+.sizer,
 .bouncer,
 .die {
   width: 0;
@@ -78,23 +65,66 @@
   color: #171204;
 }
 
-.result-text {
+.details {
   display: grid;
-  justify-items: center;
   gap: 8px;
-  min-height: 76px;
+  justify-items: center;
+  width: 100%;
+  min-width: 0;
   text-align: center;
 }
 
-.result-text strong {
-  font-size: 2rem;
+.details p {
+  margin: 0;
+}
+
+.label {
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sums {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cell {
+  display: grid;
+  min-width: 48px;
+  padding: 5px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cell.strong {
+  border-color: rgba(227, 179, 65, 0.55);
+  color: var(--accent);
+}
+
+.cell small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.cell b {
+  font-size: 1.1rem;
+}
+
+.outcome::first-letter {
+  text-transform: uppercase;
 }
 
 .outcome {
-  color: var(--muted);
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-transform: capitalize;
+  color: var(--text);
+  font-weight: 800;
 }
 
 .outcome.good {
@@ -103,4 +133,38 @@
 
 .outcome.bad {
   color: #ff9d94;
+}
+
+/* Below the three-column layout the window becomes a compact strip above the map. */
+@media (max-width: 1180px) {
+  :host {
+    --die-scale: 0.42;
+    --stage-size: 88px;
+  }
+
+  .dice-window {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    padding: 6px 16px;
+  }
+
+  .details {
+    justify-items: start;
+    text-align: left;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    align-items: center;
+    gap: 4px 12px;
+  }
+
+  .sums {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+
+  .cell {
+    min-width: 42px;
+    padding: 2px 6px;
+  }
 }

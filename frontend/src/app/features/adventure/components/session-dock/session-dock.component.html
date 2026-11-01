@@ -3,19 +3,26 @@
     <div class="character-summary">
       <strong>{{ s.character.name }}</strong>
       <span class="concept">{{ s.character.concept }}</span>
-      <span>{{ s.character.setting.label }}</span>
+      <span>{{ i18n.server(s.character.setting.label) }}</span>
       @if (s.location) {
         <span class="location">{{ s.location }}</span>
       }
       @if (s.dead) {
-        <span class="dead">Dead</span>
+        <span class="dead">{{ i18n.t('dock.dead') }}</span>
       }
     </div>
+
+    @if (s.goal) {
+      <div>
+        <h2>{{ i18n.t('dock.goal') }}</h2>
+        <p class="goal">{{ s.goal }}</p>
+      </div>
+    }
 
     <div class="meters">
       <div class="meter danger">
         <div class="meter-head">
-          <span>Health</span>
+          <span>{{ i18n.t('dock.health') }}</span>
           <strong>{{ s.health }} / {{ s.maxHealth }}</strong>
         </div>
         <div class="meter-track"><i [style.--value.%]="percent(s.health, s.maxHealth)"></i></div>
@@ -23,7 +30,7 @@
 
       <div class="meter">
         <div class="meter-head">
-          <span>Resolve</span>
+          <span>{{ i18n.t('dock.resolve') }}</span>
           <strong>{{ s.resolve }} / {{ s.maxResolve }}</strong>
         </div>
         <div class="meter-track"><i [style.--value.%]="percent(s.resolve, s.maxResolve)"></i></div>
@@ -31,16 +38,16 @@
     </div>
 
     <div>
-      <h2>Resources</h2>
+      <h2>{{ i18n.t('dock.resources') }}</h2>
       <ul class="compact-list">
         @for (resource of s.resources | keyvalue; track resource.key) {
-          <li><span>{{ resource.key }}</span><strong>{{ resource.value }}</strong></li>
+          <li><span>{{ i18n.resource(resource.key) }}</span><strong>{{ resource.value }}</strong></li>
         }
       </ul>
     </div>
 
     <div>
-      <h2>Inventory</h2>
+      <h2>{{ i18n.t('dock.inventory') }}</h2>
       @if (s.inventory.length) {
         <ul class="tag-list">
           @for (item of s.inventory; track item) {
@@ -48,13 +55,24 @@
           }
         </ul>
       } @else {
-        <p class="empty">Empty</p>
+        <p class="empty">{{ i18n.t('dock.empty') }}</p>
       }
     </div>
 
+    @if (s.people.length) {
+      <div>
+        <h2>{{ i18n.t('dock.people') }}</h2>
+        <ul class="people">
+          @for (person of s.people; track person) {
+            <li>{{ person }}</li>
+          }
+        </ul>
+      </div>
+    }
+
     @if (s.effects.length) {
       <div>
-        <h2>Effects</h2>
+        <h2>{{ i18n.t('dock.effects') }}</h2>
         <ul class="tag-list">
           @for (effect of s.effects; track effect) {
             <li class="effect">{{ effect }}</li>
@@ -64,8 +82,8 @@
     }
   } @else {
     <div class="character-summary">
-      <strong>No character</strong>
-      <span>Load a saved game or start a new one to see health, resources and inventory here.</span>
+      <strong>{{ i18n.t('dock.none') }}</strong>
+      <span>{{ i18n.t('dock.noneHint') }}</span>
     </div>
   }
 </section>

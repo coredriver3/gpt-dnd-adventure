@@ -4,16 +4,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.util.List;
 
 public record TurnOutcome(
-        @JsonPropertyDescription("narration of what happens, 60 to 140 words")
+        @JsonPropertyDescription("narration of what happens, 60 to 140 words, in two or three paragraphs separated by a blank line, without dashes, containing story text only and never these field names")
         String narration,
         @JsonPropertyDescription("short name of the location after this turn")
         String location,
         int healthDelta,
         int resolveDelta,
-        @JsonPropertyDescription("items the character plausibly obtains this turn, at most two")
+        @JsonPropertyDescription("items newly obtained in this turn's narration, at most two")
         List<String> itemsGained,
-        @JsonPropertyDescription("items from the current inventory that are lost, used up or broken")
+        @JsonPropertyDescription("items from the current inventory that are lost, used up or broken in this turn's narration")
         List<String> itemsLost,
+        @JsonPropertyDescription("coins newly found or spent in this turn's narration; 0 if none, never count coins again that were found earlier")
         int coinDelta,
         int rationsDelta,
         int torchDelta,
@@ -25,5 +26,13 @@ public record TurnOutcome(
         @JsonPropertyDescription("exactly three short, distinct actions the player could take next")
         List<String> suggestedActions,
         @JsonPropertyDescription("English prompt for a cinematic illustration of the moment")
-        String imagePrompt) {
+        String imagePrompt,
+        @JsonPropertyDescription("what the character concretely wants now and why, one sentence, updated when it changes")
+        String goal,
+        @JsonPropertyDescription("the active danger or opponent, what it wants and what it is doing now, one sentence")
+        String threat,
+        @JsonPropertyDescription("all named people so far, each as: name, who they are, how they stand toward the character")
+        List<String> characters,
+        @JsonPropertyDescription("unanswered story questions after this turn, at most four; drop what has been resolved")
+        List<String> openThreads) {
 }

@@ -1,31 +1,97 @@
-<section class="timeline-wrap" aria-label="Story path">
-  <div class="timeline">
-    @for (node of nodes; track node.id) {
-      <article class="story-node">
-        <div class="node-pin"></div>
-        <div class="node-card">
-          <div class="node-header">
-            <span class="node-type">{{ node.type }}</span>
-            <span class="roll-chip">{{ node.rollText }}</span>
-          </div>
-          @if (images && node.imagePrompt) {
-            <div class="node-image" role="img">
-              <span>{{ node.imagePrompt }}</span>
+<section class="map" #map>
+  <svg class="path" aria-hidden="true">
+    @for (segment of segments(); track segment.id) {
+      @if (segment.id === drawingId()) {
+        <mask id="path-draw" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+          <path class="draw" [attr.d]="segment.d" pathLength="1"></path>
+        </mask>
+        <path class="ink" [attr.d]="segment.d" mask="url(#path-draw)"></path>
+      } @else {
+        <path class="ink" [attr.d]="segment.d"></path>
+      }
+    }
+  </svg>
+
+  @for (entry of entries; track entry.node.id) {
+    @if (entry.stop) {
+      <article
+        class="stop"
+        [attr.data-id]="entry.node.id"
+        [attr.data-exit]="entry.exit"
+        [class.pending]="pendingId() === entry.node.id"
+        [class.fresh]="newestId === entry.node.id"
+        [class.current]="currentId === entry.node.id"
+        [class.open]="isOpen(entry)"
+        [style.--x]="entry.x"
+        [style.--entry]="entry.entry"
+      >
+        <div class="stop-inner">
+          <div class="pin">{{ entry.number }}</div>
+          <div class="card" (click)="!isOpen(entry) && toggle(entry)">
+            <div class="card-header">
+              <span class="type">{{ i18n.t(entry.node.type === 'scene' ? 'map.scene' : 'map.story') }}</span>
+              @if (entry.node.roll; as roll) {
+                <span class="roll-chip" [class.good]="roll.tone === 'good'" [class.bad]="roll.tone === 'bad'">
+                  {{ i18n.server(roll.label) }} ·
+                  @if (roll.difficulty !== null) {
+                    {{ roll.natural + roll.modifier }} / {{ roll.difficulty }}
+                  } @else {
+                    {{ roll.natural + roll.modifier }}
+                  }
+                </span>
+              } @else if (entry.node.rollText !== 'no roll') {
+                <span class="roll-chip">{{ entry.node.rollText }}</span>
+              }
             </div>
-          }
-          @if (node.action) {
-            <p class="node-action">&rsaquo; {{ node.action }}</p>
-          }
-          <p class="node-text">{{ node.text }}</p>
-          <div class="consequences">
-            @for (consequence of node.consequences; track consequence.text) {
-              <span [class.good]="consequence.tone === 'good'" [class.bad]="consequence.tone === 'bad'">
-                {{ consequence.text }}
-              </span>
+
+            @if (entry.node.action) {
+              <p class="action">&rsaquo; {{ entry.node.action }}</p>
+            }
+
+            @if (isOpen(entry)) {
+              @if (images && entry.node.imagePrompt) {
+                <div class="image" role="img">
+                  <span>{{ entry.node.imagePrompt }}</span>
+                </div>
+              }
+              <div class="text">
+                @for (paragraph of entry.paragraphs; track $index) {
+                  <p>{{ paragraph }}</p>
+                }
+              </div>
+              @if (entry.node.consequences.length) {
+                <div class="consequences">
+                  @for (consequence of entry.node.consequences; track consequence.text) {
+                    <span [class.good]="consequence.tone === 'good'" [class.bad]="consequence.tone === 'bad'">
+                      {{ i18n.server(consequence.text) }}
+                    </span>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="summary">{{ entry.paragraphs[0] }}</p>
+            }
+
+            @if (currentId !== entry.node.id) {
+              <button
+                type="button"
+                class="fold"
+                [attr.aria-expanded]="isOpen(entry)"
+                (click)="$event.stopPropagation(); toggle(entry)"
+              >
+                {{ i18n.t(isOpen(entry) ? 'map.collapse' : 'map.expand') }}
+              </button>
             }
           </div>
         </div>
       </article>
+    } @else {
+      <aside class="note" [class.fresh]="newestId === entry.node.id">
+        @if (entry.node.action) {
+          <p class="action">&rsaquo; {{ entry.node.action }}</p>
+        }
+        <p class="note-text">{{ i18n.server(entry.node.text) }}</p>
+      </aside>
     }
-  </div>
+  }
 </section>

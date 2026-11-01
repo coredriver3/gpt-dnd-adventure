@@ -5,6 +5,7 @@ import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.GameSetting;
 import de.lwlab.gptdnd.domain.Language;
 import de.lwlab.gptdnd.service.rules.Degree;
+import de.lwlab.gptdnd.service.rules.Direction;
 import de.lwlab.gptdnd.service.rules.RollResult;
 import de.lwlab.gptdnd.service.rules.StartingGear;
 import java.util.ArrayList;
@@ -28,8 +29,12 @@ public class LocalStoryProvider implements StoryProvider {
                         .formatted(character.name(), character.concept(), place);
         List<String> items = new ArrayList<>(STARTING_ITEMS);
         Collections.shuffle(items);
+        boolean german = session.language() == Language.DE;
         return new SceneIntro(text, place, items.subList(0, gear.itemCount()), suggestions(session.language()),
-                "%s, %s, cinematic adventure concept art".formatted(character.setting(), place));
+                "%s, %s, cinematic adventure concept art".formatted(character.setting(), place),
+                german ? "Finde einen sicheren Weg aus dieser Gegend." : "Find a safe way out of this place.",
+                german ? "Etwas folgt dir und kommt näher." : "Something is following you and getting closer.",
+                List.of(), List.of());
     }
 
     @Override
@@ -38,16 +43,18 @@ public class LocalStoryProvider implements StoryProvider {
             String rejection = session.language() == Language.DE
                     ? "Beschreibe eine zusammenhängende Handlung, die in die aktuelle Szene passt."
                     : "Describe a coherent action that fits the current scene.";
-            return new ActionPlan(false, rejection, false, "", 0, 0);
+            return new ActionPlan(ActionPlan.Decision.INVALID, rejection, "", 0, 0, "", "");
         }
-        boolean rollNeeded = !action.matches("(?i)^(look|listen|warte|schaue|untersuche vorsichtig|inspect|observe)$");
+        if (action.matches("(?i)^(look|listen|wait|walk|go|warte|schaue|gehe|folge|inspect|observe)\\b.*")) {
+            return new ActionPlan(ActionPlan.Decision.AUTOMATIC_SUCCESS, "", "", 0, 0, "", "");
+        }
         int danger = Math.min(4, Math.floorDiv(session.turn(), 3) + (session.health() <= 4 ? 1 : 0));
-        return new ActionPlan(true, "", rollNeeded, rollNeeded ? "Luck" : "", 10 + danger, 0);
+        return new ActionPlan(ActionPlan.Decision.ROLL, "", "Luck", 10 + danger, 0, "", "");
     }
 
     @Override
-    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll) {
-        Degree degree = roll == null ? Degree.NO_ROLL : roll.degree();
+    public TurnOutcome resolve(GameSession session, String action, ActionPlan plan, RollResult roll, Direction direction) {
+        Degree degree = roll == null ? Degree.AUTOMATIC_SUCCESS : roll.degree();
         Language language = session.language();
         String place = random(places(session.character().setting()));
         String text = language == Language.DE
@@ -72,7 +79,8 @@ public class LocalStoryProvider implements StoryProvider {
         int rations = badRoll && chance(65) && session.resources().getOrDefault("rations", 0) > 0 ? -1 : 0;
         return new TurnOutcome(text, place, health, resolve, gained, List.of(), 0, rations, 0, List.of(), List.of(), false,
                 suggestions(language), "%s, %s, player action: %s, %s, cinematic fantasy"
-                        .formatted(session.character().setting(), place, action, degree.label()));
+                        .formatted(session.character().setting(), place, action, degree.label()),
+                session.goal(), session.threat(), session.characters(), session.openThreads());
     }
 
     private List<String> places(String setting) {
@@ -87,7 +95,8 @@ public class LocalStoryProvider implements StoryProvider {
                 case PARTIAL_SUCCESS -> "You reach your goal, yet you pay for it immediately.";
                 case SUCCESS -> "You clearly prevail and take control of the moment.";
                 case CRITICAL_SUCCESS -> "You dominate the scene, but the reward stays plausible.";
-                case NO_ROLL -> "You gather detail without escalating the situation.";
+                case AUTOMATIC_SUCCESS -> "It simply works.";
+                case AUTOMATIC_FAILURE -> "This cannot work.";
             };
         }
         return switch (degree) {
@@ -96,7 +105,8 @@ public class LocalStoryProvider implements StoryProvider {
             case PARTIAL_SUCCESS -> "Du erreichst dein Ziel, aber bezahlst sofort dafür.";
             case SUCCESS -> "Du setzt dich klar durch und gewinnst Kontrolle über den Moment.";
             case CRITICAL_SUCCESS -> "Du dominierst die Szene, aber die Belohnung bleibt plausibel.";
-            case NO_ROLL -> "Du sammelst Details, ohne die Lage zu eskalieren.";
+            case AUTOMATIC_SUCCESS -> "Es klappt einfach.";
+            case AUTOMATIC_FAILURE -> "Das kann nicht gelingen.";
         };
     }
 
