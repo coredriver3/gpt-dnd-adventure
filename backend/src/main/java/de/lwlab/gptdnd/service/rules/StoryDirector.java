@@ -1,6 +1,7 @@
 package de.lwlab.gptdnd.service.rules;
 
 import de.lwlab.gptdnd.domain.Beat;
+import de.lwlab.gptdnd.domain.Consequence;
 import de.lwlab.gptdnd.domain.GameSession;
 import de.lwlab.gptdnd.domain.StoryNode;
 import java.util.ArrayList;
@@ -66,6 +67,6 @@ public final class StoryDirector {
         List<StoryNode> stops = session.nodes().stream().filter(node -> StoryNode.STORY.equals(node.type())).toList();
         return stops.subList(Math.max(0, stops.size() - COIN_COOLDOWN_STOPS), stops.size()).stream()
                 .flatMap(node -> node.consequences().stream())
-                .anyMatch(consequence -> consequence.text().matches("\\+\\d+ coin"));
+                .anyMatch(Consequence::foundCoins);
     }
 }

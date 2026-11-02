@@ -217,6 +217,33 @@ class GameServiceTest {
     }
 
     @Test
+    void thePlayerCharacterNeverLandsInThePeopleList() {
+        GameSession session = create();
+        provider.outcome = new TurnOutcome("Ada steps out.", "Old mill", 0, List.of(), List.of(), 0, List.of(), List.of(), false,
+                List.of(), "image", "", "", List.of("Mara, the smuggler you play", "Maraud, a bandit", "Ada, a scavenger"), List.of(), "");
+
+        GameSession after = gameService.act(session.id(), new ActionRequest("I wait a moment"));
+
+        assertThat(after.characters()).containsExactly("Maraud, a bandit", "Ada, a scavenger");
+    }
+
+    @Test
+    void rewritesTurnsToldInThirdPersonButAllowsTheNameInSpeech() {
+        GameSession session = create();
+        provider.outcome = new TurnOutcome("Mara opens the door.", "Old mill", 0, List.of(), List.of(), 0, List.of(), List.of(), false,
+                List.of(), "image", "", "", List.of(), List.of(), "");
+        provider.resolveCalls = 0;
+        gameService.act(session.id(), new ActionRequest("I open the door"));
+        assertThat(provider.resolveCalls).isEqualTo(2);
+
+        provider.outcome = new TurnOutcome("You open the door. \"Mara, wait!\" Ada calls.", "Old mill", 0, List.of(), List.of(), 0,
+                List.of(), List.of(), false, List.of(), "image", "", "", List.of(), List.of(), "");
+        provider.resolveCalls = 0;
+        gameService.act(session.id(), new ActionRequest("I open the door"));
+        assertThat(provider.resolveCalls).isEqualTo(1);
+    }
+
+    @Test
     void canSpendMoreThanTenCoinsButNotMoreThanTheyHave() {
         GameSession session = create();
         provider.outcome = outcome(0, false, List.of(), List.of(), -50);

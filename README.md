@@ -5,7 +5,7 @@ Angular + Spring Boot monorepo for a dice-driven GPT-style adventure prototype.
 ## Structure
 
 - `frontend/` - Angular app with componentized game UI and API service layer.
-- `backend/` - Spring Boot REST API with MariaDB persistence and game rules.
+- `backend/` - Spring Boot REST API with PostgreSQL persistence and game rules.
 - `legacy-static/` - original static prototype kept as reference.
 
 ## Run locally
@@ -54,7 +54,8 @@ HTML entry point does neither.
 
 ## Game master
 
-Claude (`ClaudeStoryProvider`) runs the game as narrator. Each action is resolved in two steps:
+A language model runs the game as narrator (`OpenRouterStoryProvider` by default with a free model, or `ClaudeStoryProvider`).
+Without any key a rule-based local narrator is used. Each action is resolved in two steps:
 
 1. **Plan** – the model decides whether the action simply works, cannot work, or is uncertain enough to
    roll. For a roll it picks skill, difficulty (DC), modifier and what is at stake.
@@ -96,5 +97,6 @@ Without any key the backend falls back to `LocalStoryProvider`, a rule-based off
 ## Verify
 
 ```bash
-npm run build
+cd backend && ./mvnw test     # uses H2, no Docker needed
+cd frontend && npx ng build
 ```

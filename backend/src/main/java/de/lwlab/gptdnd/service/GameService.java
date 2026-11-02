@@ -43,6 +43,7 @@ public class GameService {
     private static final int MAX_COINS_FOUND = 6;
     private static final Pattern VALID_CHARACTER = Pattern.compile("\\p{Lu}[^\\n/]{2,200}");
     private static final Pattern VALID_THREAD = Pattern.compile("\\p{L}[^\\n/]{9,200}");
+    private static final Pattern QUOTED_SPEECH = Pattern.compile("\"[^\"]*\"|\u201E[^\u201C\u201D\"]*[\u201C\u201D]|\u201C[^\u201D]*\u201D|\u00BB[^\u00AB]*\u00AB|\u00AB[^\u00BB]*\u00BB");
     private static final Pattern TECHNICAL_TEXT = Pattern.compile(
             "\\b(healthDelta|coinDelta|characterDied|itemsLost|itemsGained|effectsAdded"
                     + "|effectsRemoved|suggestedActions|imagePrompt|openThreads)\\b");
@@ -143,7 +144,7 @@ public class GameService {
         }
         Direction direction = StoryDirector.next(session, degree, ThreadLocalRandom.current());
         TurnOutcome outcome = storyProvider.resolve(session, text, plan, roll, direction);
-        if (TECHNICAL_TEXT.matcher(outcome.narration()).find()) {
+        if (TECHNICAL_TEXT.matcher(outcome.narration()).find() || addressesPlayerInThirdPerson(session, outcome.narration())) {
             outcome = storyProvider.resolve(session, text, plan, roll, direction);
         }
         Consequence.Tone tone = switch (degree) {
@@ -180,9 +181,10 @@ public class GameService {
     }
 
     /** Keeps the current list unless the model delivered usable entries; weak models fill these fields with garbage. */
-    private static void replaceStoryList(List<String> current, List<String> proposed, int max, Pattern valid) {
+    private static void replaceStoryList(List<String> current, List<String> proposed, int max, Pattern valid, String playerName) {
         List<String> usable = limit(proposed, Integer.MAX_VALUE).stream()
                 .filter(entry -> valid.matcher(entry).matches())
+                .filter(entry -> !startsWithName(entry, playerName))
                 .limit(max)
                 .toList();
         if (!usable.isEmpty()) {
@@ -201,8 +203,31 @@ public class GameService {
         if (layout != null && !layout.isBlank()) {
             session.layout(text(layout, 1000));
         }
-        replaceStoryList(session.characters(), characters, MAX_CHARACTERS, VALID_CHARACTER);
-        replaceStoryList(session.openThreads(), openThreads, MAX_THREADS, VALID_THREAD);
+        String player = session.character().name();
+        replaceStoryList(session.characters(), characters, MAX_CHARACTERS, VALID_CHARACTER, player);
+        replaceStoryList(session.openThreads(), openThreads, MAX_THREADS, VALID_THREAD, "");
+    }
+
+    /** The player's own character is not a person to meet, so it never belongs in the people list. */
+    private static boolean startsWithName(String entry, String name) {
+        if (name == null || name.isBlank() || !entry.regionMatches(true, 0, name, 0, name.length())) {
+            return false;
+        }
+        return entry.length() == name.length() || !Character.isLetterOrDigit(entry.charAt(name.length()));
+    }
+
+    /**
+     * Narration is second person, so the player's name should only appear inside spoken words. A name outside
+     * quotes means the model told the story in third person. Heuristic only: it cannot catch "he" or "she".
+     */
+    static boolean addressesPlayerInThirdPerson(GameSession session, String narration) {
+        String name = session.character().name();
+        if (name == null || name.isBlank() || narration == null) {
+            return false;
+        }
+        String outsideQuotes = QUOTED_SPEECH.matcher(narration).replaceAll(" ");
+        return Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(name) + "(?![\\p{L}\\p{N}])", Pattern.CASE_INSENSITIVE)
+                .matcher(outsideQuotes).find();
     }
 
     /** Applies the narrator's proposed changes, clamped to what the rolled degree allows. */
@@ -226,7 +251,7 @@ public class GameService {
             consequences.add(new Consequence(signed(health) + " health", health > 0 ? Consequence.Tone.GOOD : Consequence.Tone.BAD));
         }
 
-        changeResource(session, "coin", clamp(outcome.coinDelta(), Integer.MIN_VALUE, direction.coinsAllowed() ? MAX_COINS_FOUND : 0), consequences);
+        changeResource(session, Consequence.COIN, clamp(outcome.coinDelta(), Integer.MIN_VALUE, direction.coinsAllowed() ? MAX_COINS_FOUND : 0), consequences);
 
         for (String item : limit(outcome.itemsLost(), 3)) {
             session.inventory().stream()
